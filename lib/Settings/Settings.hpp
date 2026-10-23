@@ -52,12 +52,17 @@ public:
   }
   void clearGains() { m_gains = {}; }
 
+  /** Motor tilt learned in hover (FlightController hover compensation), + = forward. */
+  float hoverTiltDeg() const { return m_hoverTiltDeg; }
+  void setHoverTilt(float deg) { m_hoverTiltDeg = deg; }
+
 private:
   static constexpr const char* NAMESPACE = "bicopter";
   static constexpr const char* KEY = "settings";
   static constexpr uint32_t    VERSION = 1;  // bump when StoredSettings changes
   static constexpr const char* GAINS_KEY = "gains";
   static constexpr uint32_t    GAINS_VERSION = 2;  // bump when StoredGains changes
+  static constexpr const char* HOVER_KEY = "hoverTilt";  // own key, so older saves keep level/trims/gains
 
   struct Blob
   {
@@ -73,4 +78,5 @@ private:
 
   StoredSettings m_data = {0.0f, 0.0f, 0, 0};
   StoredGains    m_gains = {};
+  float          m_hoverTiltDeg = 0.0f;
 };

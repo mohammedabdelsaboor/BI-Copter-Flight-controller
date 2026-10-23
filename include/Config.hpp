@@ -91,12 +91,15 @@ inline constexpr uint16_t RC_STICK_MAX_US      = 2000;
 inline constexpr uint16_t RC_DEADBAND_US       = 6;      // roll/pitch, around the stick centre
 // Yaw shares the left stick with throttle (Mode 2): pushing throttle up nudges yaw by 20-40 us, which the
 // yaw I term would integrate into a slowly growing servo difference. A larger yaw deadband ignores it.
-inline constexpr uint16_t RC_YAW_DEADBAND_US   = 45;
+// Measured on this FS-i6: the yaw stick rests anywhere from 1465 to 1500 us, and full throttle pulls yaw up by
+// another 35-50 us. 75 us around a fixed 1500 us centre covers both.
+inline constexpr uint16_t RC_YAW_DEADBAND_US   = 75;
 // true:  after boot, each stick's resting position (within +-100 us of 1500) is learned ONCE and then locked.
 //        Removes a transmitter trim/subtrim offset that would otherwise command a constant yaw/pitch/roll,
 //        while trims changed later (in flight) still work.
 // false: centre is fixed at 1500 us.
 inline constexpr bool     RC_LEARN_CENTRES     = true;
+inline constexpr bool     RC_LEARN_YAW_CENTRE  = false;  // yaw keeps 1500 us (see RC_YAW_DEADBAND_US)
 inline constexpr uint16_t RC_THROTTLE_LOW_US   = 1100;   // below this the throttle counts as "low"
 inline constexpr uint16_t RC_THROTTLE_MAX_US   = 1950;   // full throttle
 // The FS-iA6 keeps sending the LAST pulses when the radio link drops, unless a failsafe is set on the
@@ -121,8 +124,8 @@ inline constexpr uint16_t SERVO_TRAVEL_US      = 350;    // +-350 us around cent
 inline constexpr uint16_t SERVO_MIN_US         = 1000;   // hard limits, protect the tilt mechanism
 inline constexpr uint16_t SERVO_MAX_US         = 2000;
 // Set so that a POSITIVE tilt command tilts that motor FORWARD. Mirrored servos usually need one reversed.
-inline constexpr bool     SERVO_LEFT_REVERSED  = false;
-inline constexpr bool     SERVO_RIGHT_REVERSED = true;
+inline constexpr bool     SERVO_LEFT_REVERSED  = true;
+inline constexpr bool     SERVO_RIGHT_REVERSED = false;
 
 // Standard PWM ESCs (BLHeli_S / BLHeli_32 / SimonK) accept 400 Hz. Use 50 for old or unknown ESCs.
 inline constexpr uint32_t ESC_HZ               = 400;
@@ -158,10 +161,18 @@ inline constexpr float GYRO_LPF_PITCH_HZ   = 25.0f;
 inline constexpr float GYRO_LPF_YAW_HZ     = 25.0f;
 inline constexpr float SERVO_CMD_LPF_HZ    = 10.0f;   // smoothing of the pitch/yaw servo commands
 
+// Hover tilt compensation. A CG a few mm ahead of/behind the rotor axis makes the servos hold the motors
+// tilted in hover, which pushes the model forward/back all the time. The firmware learns that tilt and pitches
+// the body the opposite way so the thrust points straight up. Kept across arms, cleared at power-off.
+inline constexpr bool  HOVER_TRIM_ENABLED      = true;
+inline constexpr float HOVER_TRIM_TAU_S        = 3.0f;    // seconds to follow a change
+inline constexpr float HOVER_TRIM_MAX_DEG      = 10.0f;   // more than this: fix the CG instead
+inline constexpr float HOVER_TRIM_MIN_THROTTLE = 0.30f;   // learn only when airborne
+
 // Flip a correction if that axis fights instead of resisting (docs/SETUP_AND_TUNING.md, bench checks)
 inline constexpr bool REVERSE_ROLL_CORRECTION  = false;
 inline constexpr bool REVERSE_PITCH_CORRECTION = false;
-inline constexpr bool REVERSE_YAW_CORRECTION   = false;
+inline constexpr bool REVERSE_YAW_CORRECTION   = true; 
 
 inline constexpr float    ARM_MAX_TILT_DEG     = 25.0f;   // refuse to arm when tilted more than this
 inline constexpr float    CRASH_TILT_DEG       = 70.0f;   // armed and tilted more than this ...
@@ -169,6 +180,21 @@ inline constexpr uint32_t CRASH_TIME_MS        = 500;     // ... for this long -
 inline constexpr uint32_t AUTO_DISARM_MS       = 15000;   // armed with throttle low this long -> disarm
 inline constexpr float    THROTTLE_I_ENABLE    = 0.10f;   // I terms held at zero below this throttle (on the ground)
 inline constexpr uint32_t IMU_FAULT_READS      = 25;      // consecutive failed IMU reads (50 ms) -> fault, disarm
+
+// ============================================================================
+//  Web tuning page (WiFi access point)
+// ============================================================================
+// Join the WiFi network below with a phone or laptop and open http://192.168.4.1
+// Live attitude, level calibration, servo tilt trims and PID gains. Changes are refused while ARMED.
+inline constexpr bool     WEB_TUNING_ENABLED = true;
+inline constexpr char     WIFI_AP_SSID[]     = "BiCopter";
+inline constexpr char     WIFI_AP_PASSWORD[] = "bicopter123";  // at least 8 characters
+inline constexpr uint8_t  WIFI_AP_CHANNEL    = 6;
+// Transmit power in quarter dBm, 78 = 19.5 dBm (full). On the PowerFeather 34 (8.5 dBm) was too low:
+// the access point started but no phone could see it.
+inline constexpr int8_t   WIFI_TX_POWER_QDBM = 78;
+// Converts servo pulses to the motor tilt angle shown on the page (MG996R: ~350 us = ~35 deg)
+inline constexpr float    SERVO_US_PER_DEG   = 10.0f;
 
 }  // namespace cfg
 // clang-format on

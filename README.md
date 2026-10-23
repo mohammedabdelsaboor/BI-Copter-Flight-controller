@@ -1,5 +1,7 @@
 # BiCopter Flight Controller
 
+![The bicopter: two tilting motors on MG996R servos at the ends of the arm, ESP32-S3 and MPU6050 in the middle](docs/media/bicopter.jpg)
+
 Firmware for a small tilt-rotor bicopter, written for the ESP32-S3 PowerFeather board. Two motors give the
 lift, and each motor sits on a servo that tilts it forward and back. The ESP32 reads a FlySky receiver and an
 MPU6050, works out the model's attitude 500 times a second, and drives the two ESCs and the two servos to keep
@@ -10,7 +12,8 @@ with, rather than a general purpose autopilot. Everything that matters for flyin
 lines of C++ that you can read in an afternoon.
 
 The full write-up (how a bicopter flies, the firmware design, the setup procedure and the references) is in
-[docs/BiCopter_Project_Guide.pdf](docs/BiCopter_Project_Guide.pdf).
+[docs/BiCopter_Project_Guide.pdf](docs/BiCopter_Project_Guide.pdf). A short test flight is in
+[docs/media/test_flight.mp4](docs/media/test_flight.mp4).
 
 ## Hardware
 
@@ -54,11 +57,13 @@ bi_copter_firmware/
 │   ├── BiCopterMixer/        roll/pitch/yaw/throttle -> 2 ESCs + 2 servos
 │   ├── Settings/             level, trims and tuned gains kept in flash
 │   ├── FlightController/     state machine, safety checks and the control loop
-│   └── SerialConsole/        USB commands and live data
+│   ├── SerialConsole/        USB commands and live data
+│   └── TuningWeb/            WiFi tuning page: live angles, level, servo trims, PID gains
 ├── tools/
 │   ├── flight_log.py         records the console to a file during a test
 │   └── make_guide.py         rebuilds the PDF guide
 └── docs/
+    ├── media/                photo of the model and a test flight video
     ├── BiCopter_Project_Guide.pdf
     ├── WIRING.md
     └── SETUP_AND_TUNING.md
@@ -91,6 +96,18 @@ There are no switches on a 4-channel setup, so arming uses the sticks:
 | Save level | disarmed, model level, throttle down, pitch fully forward or back for 3 s |
 
 The board LED blinks slowly when disarmed, stays on when armed and blinks fast in failsafe.
+
+### Tuning from a phone
+
+The board runs its own WiFi network. Join **BiCopter** (password `bicopter123`) and open **http://192.168.4.1**:
+
+- live attitude (artificial horizon) and a 15 s roll/pitch graph
+- level calibration and servo trims, with the live tilt angle of each motor
+- PID gains per axis, applied instantly and saved to flash
+- hover balance: the motor tilt learned in flight, used to keep the thrust vertical
+- a flight recorder that saves a .csv of the flight to the phone
+
+Changes are refused while armed. Network name, password and power are in `include/Config.hpp`.
 
 Before the first flight, go through [docs/SETUP_AND_TUNING.md](docs/SETUP_AND_TUNING.md) with the propellers
 off. It checks every direction (sticks, sensor, servos, motors) one at a time. A single reversed direction is

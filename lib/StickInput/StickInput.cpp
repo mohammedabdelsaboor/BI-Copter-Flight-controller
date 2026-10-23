@@ -6,6 +6,13 @@
 void StickInput::configure(const StickConfig& config)
 {
   m_config = config;
+  if (!config.learnYawCentre)
+  {
+    // Sloppy yaw gimbals rest anywhere within +-35 us, so a learned yaw centre is as likely to be off
+    // as 1500. A fixed centre plus the wider yaw deadband is the more predictable choice.
+    m_centreUs[config.chYaw] = MID_US;
+    m_centreLocked[config.chYaw] = true;
+  }
 }
 
 const Sticks& StickInput::update(const RcPwmInput& receiver, bool learn, uint32_t nowMs)

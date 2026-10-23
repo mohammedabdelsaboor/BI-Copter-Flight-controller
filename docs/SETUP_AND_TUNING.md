@@ -6,6 +6,24 @@ Open the console with `pio device monitor` (or any serial terminal) and type a c
 Once a second the board prints a status line: its state, the roll and pitch angles, whether the radio is OK,
 the loop rate, and, when arming would be refused, the reason.
 
+### Web tuning page
+
+Everything below can also be done from a phone. The board starts a WiFi network called `BiCopter`
+(password `bicopter123`, both set in `Config.hpp`). Join it and open **http://192.168.4.1**. The page shows:
+
+- **Attitude**: live roll and pitch as the controller sees them, the raw sensor angle, gyro rates.
+- **Level calibration**: *Set current attitude as level* (same as `l`, saved at once), or type the offsets.
+- **Motor tilt**: the live tilt angle of each motor (+ = forward) and its servo trim, with −5/−1/+1/+5 µs
+  buttons that act immediately. With the model level and the sticks centred, trim until both read about 0°.
+- **PID gains**: rate P/I/D and angle P for each axis, the same values as `pid` and `ang`.
+- **Save to flash**, **Recalibrate gyro**, **Restore defaults**.
+
+Gains, offsets and trims take effect as soon as you apply them, but are only kept after **Save to flash**
+(a blue banner reminds you). While armed the page only displays; every change is refused.
+
+WiFi shares the 2.4 GHz band with the FlySky link. Do the failsafe test below with WiFi on, and set `WEB_TUNING_ENABLED = false` once tuning is done if you see
+any radio glitches.
+
 ## 1. Power-up
 
 Leave the model still for the first couple of seconds after power-on. The gyro is calibrated then, and if the

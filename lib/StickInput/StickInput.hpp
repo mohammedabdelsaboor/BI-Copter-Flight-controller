@@ -33,6 +33,7 @@ struct StickConfig
   uint16_t yawArmUs;
   uint16_t yawDisarmUs;
   uint16_t pitchGestureUs;
+  bool     learnYawCentre;  // false keeps yaw at 1500 us even when learnCentres is on
 };
 
 struct Sticks

@@ -16,7 +16,9 @@ bool Settings::begin()
   const size_t length = prefs.getBytes(KEY, &blob, sizeof(blob));
   GainsBlob    gainsBlob = {};
   const size_t gainsLength = prefs.isKey(GAINS_KEY) ? prefs.getBytes(GAINS_KEY, &gainsBlob, sizeof(gainsBlob)) : 0;
+  const float  hoverTilt = prefs.isKey(HOVER_KEY) ? prefs.getFloat(HOVER_KEY, 0.0f) : 0.0f;
   prefs.end();
+  m_hoverTiltDeg = isfinite(hoverTilt) ? hoverTilt : 0.0f;
 
   m_gains =
       ((gainsLength == sizeof(gainsBlob)) && (gainsBlob.version == GAINS_VERSION)) ? gainsBlob.gains : StoredGains{};
@@ -48,6 +50,7 @@ bool Settings::save()
   {
     prefs.remove(GAINS_KEY);
   }
+  ok &= prefs.putFloat(HOVER_KEY, m_hoverTiltDeg) == sizeof(float);
   prefs.end();
   return ok;
 }
@@ -56,4 +59,5 @@ void Settings::restoreDefaults()
 {
   m_data = {0.0f, 0.0f, 0, 0};
   m_gains = {};
+  m_hoverTiltDeg = 0.0f;
 }

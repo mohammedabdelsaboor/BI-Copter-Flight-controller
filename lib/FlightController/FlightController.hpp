@@ -44,6 +44,12 @@ struct FlightConfig
   uint32_t imuFaultReads;
   float    gyroFilterHz[3];  // roll, pitch, yaw gyro low pass, 0 = off
   float    servoFilterHz;    // low pass on the pitch/yaw (servo) commands, 0 = off
+  // Hover tilt compensation, see FlightController::updateHoverTrim()
+  bool     hoverTrimEnabled;
+  float    hoverTrimTauS;          // how fast the learned motor tilt follows, s
+  float    hoverTrimMaxDeg;        // limit of the body pitch offset
+  float    hoverTrimMinThrottle;   // learn only above this throttle (airborne)
+  float    servoDegPerCommand;     // motor tilt in degrees for a pitch command of 1.0
 };
 
 enum class FlightState : uint8_t
@@ -71,6 +77,8 @@ struct FlightTelemetry
   uint32_t     imuErrors;
   uint8_t      imuId;      // WHO_AM_I
   bool         accelUsed;  // accelerometer accepted by the attitude filter this loop
+  float        hoverMotorTiltDeg;  // learned average motor tilt in hover, + = forward
+  float        hoverPitchTrimDeg;  // body pitch offset that cancels it, + = nose down
 };
 
 class FlightController
@@ -124,6 +132,8 @@ private:
   void setEvent(const char* text);
   void resetPids();
   void trackGyroBias(float dt);
+  void updateHoverTrim(float servoPitchCommand, float throttle, float dt);
+  void saveHoverTrim();
 
   Mpu6050&           m_imu;
   AttitudeEstimator& m_attitude;
@@ -156,6 +166,10 @@ private:
   float       m_gyroDrift[3] = {0.0f, 0.0f, 0.0f};  // deg/s, see trackGyroBias()
   float       m_stillTimeS = 0.0f;
   float       m_headingErrorDeg = 0.0f;  // heading hold: target minus actual heading
+  float       m_hoverMotorTiltDeg = 0.0f;  // learned in flight, saved to flash after each flight
+  float       m_hoverPitchTrimDeg = 0.0f;
+  float       m_hoverSavedDeg = 0.0f;      // value last written to flash
+  float       m_hoverLearnS = 0.0f;        // time spent learning this flight
   char        m_eventText[96] = {};
   const char* m_event = "boot";
   uint32_t    m_eventCount = 0;

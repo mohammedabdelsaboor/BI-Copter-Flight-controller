@@ -284,11 +284,12 @@ void SerialConsole::printStream()
     {
       const MixerOutputs& o = m_mixer.outputs();
       printf("%s thr %.2f | R %+5.1f P %+5.1f | rate r %+6.1f/%+6.1f p %+6.1f/%+6.1f y %+6.1f/%+6.1f | cmd %+5.2f "
-             "%+5.2f %+5.2f yI %+5.2f | ESC %4u %4u | srv %4u %4u diff %+4d | zdrift %+.2f",
+             "%+5.2f %+5.2f yI %+5.2f | ESC %4u %4u | srv %4u %4u diff %+4d | zdrift %+.2f | hover tilt %+.1f",
              FlightController::stateName(t.state), t.throttle, t.rollDeg, t.pitchDeg, t.gyroDps[0], t.rateSetDps[0],
              t.gyroDps[1], t.rateSetDps[1], t.gyroDps[2], t.rateSetDps[2], t.command[0], t.command[1], t.command[2],
              t.yawI, o.escLeftUs, o.escRightUs, o.servoLeftUs, o.servoRightUs,
-             static_cast<int>(o.servoLeftUs) + static_cast<int>(o.servoRightUs) - 3000, t.yawGyroDriftDps);
+             static_cast<int>(o.servoLeftUs) + static_cast<int>(o.servoRightUs) - 3000, t.yawGyroDriftDps,
+             t.hoverMotorTiltDeg);
       break;
     }
 

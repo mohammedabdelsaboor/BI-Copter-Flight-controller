@@ -10,9 +10,12 @@
  *   Disarm   : throttle low + yaw fully LEFT  for 1 s
  *   Level cal: disarmed, model level, throttle low, pitch fully forward or back for 3 s
  *
+ * Tuning  : join the "BiCopter" WiFi network and open http://192.168.4.1 (see Config.hpp)
+ *
  * LED: slow blink = disarmed, solid = ARMED, fast blink = failsafe, very fast = fault/calibrating.
  */
 #include <Arduino.h>
+#include <WiFi.h>
 #include "esp_task_wdt.h"
 
 #include "Config.hpp"
@@ -24,6 +27,7 @@
 #include "Settings.hpp"
 #include "FlightController.hpp"
 #include "SerialConsole.hpp"
+#include "TuningWeb.hpp"
 
 #ifndef BICOPTER_ESC_CALIBRATION
 #define BICOPTER_ESC_CALIBRATION 0
@@ -43,6 +47,7 @@ static Settings          settings;
 static LoopStats         loopStats = {};
 static FlightController  flight(imu, attitude, sticks, mixer, settings);
 static SerialConsole     console(flight, receiver, sticks, mixer, settings, loopStats);
+static TuningWeb         web(flight, mixer, settings);
 
 // ---------------------------------------------------------------------------------------------
 //  Config -> library structs
@@ -61,7 +66,7 @@ static StickConfig stickConfig()
           cfg::RC_REVERSE_ROLL,    cfg::RC_REVERSE_PITCH,   cfg::RC_REVERSE_YAW,          cfg::RC_STICK_MIN_US,
           cfg::RC_STICK_MAX_US,    cfg::RC_DEADBAND_US,     cfg::RC_YAW_DEADBAND_US,      cfg::RC_LEARN_CENTRES,
           cfg::RC_THROTTLE_LOW_US, cfg::RC_THROTTLE_MAX_US, cfg::RC_FAILSAFE_THROTTLE_US, cfg::RC_YAW_ARM_US,
-          cfg::RC_YAW_DISARM_US,   cfg::RC_PITCH_GESTURE_US};
+          cfg::RC_YAW_DISARM_US,   cfg::RC_PITCH_GESTURE_US,   cfg::RC_LEARN_YAW_CENTRE};
 }
 
 static FlightConfig flightConfig()
@@ -89,7 +94,12 @@ static FlightConfig flightConfig()
           cfg::THROTTLE_I_ENABLE,
           cfg::IMU_FAULT_READS,
           {cfg::GYRO_LPF_ROLL_HZ, cfg::GYRO_LPF_PITCH_HZ, cfg::GYRO_LPF_YAW_HZ},
-          cfg::SERVO_CMD_LPF_HZ};
+          cfg::SERVO_CMD_LPF_HZ,
+          cfg::HOVER_TRIM_ENABLED,
+          cfg::HOVER_TRIM_TAU_S,
+          cfg::HOVER_TRIM_MAX_DEG,
+          cfg::HOVER_TRIM_MIN_THROTTLE,
+          static_cast<float>(cfg::SERVO_TRAVEL_US) / cfg::SERVO_US_PER_DEG};
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -217,6 +227,25 @@ void setup()
   }
   flight.start();
 
+  // 7. Web tuning page (WiFi access point)
+  if (cfg::WEB_TUNING_ENABLED)
+  {
+    const TuningWebConfig webConfig = {cfg::WIFI_AP_SSID,          cfg::WIFI_AP_PASSWORD,    cfg::WIFI_AP_CHANNEL,
+                                       cfg::WIFI_TX_POWER_QDBM,    cfg::SERVO_CENTER_US,     cfg::SERVO_US_PER_DEG,
+                                       cfg::SERVO_LEFT_REVERSED,   cfg::SERVO_RIGHT_REVERSED};
+    if (web.begin(webConfig))
+    {
+      char text[80];
+      snprintf(text, sizeof(text), "web tuning: join WiFi '%s', open http://%s", cfg::WIFI_AP_SSID,
+               WiFi.softAPIP().toString().c_str());
+      console.printLine(text);
+    }
+    else
+    {
+      console.printLine("web tuning: WiFi access point failed to start");
+    }
+  }
+
   startWatchdog();
 }
 
@@ -258,9 +287,13 @@ void loop()
 #else
   flight.update(receiver, dt, nowMs);
 
-  // 'g' from the console, or the boot calibration has not succeeded yet (model was moving)
+  web.update(nowMs, loopStats.loopHz);
+
+  // 'g' from the console or the web page, or the boot calibration has not succeeded yet (model was moving)
   const bool needCalibration = !imu.isCalibrated() && (flight.state() == FlightState::DISARMED);
-  if (console.takeGyroCalibrationRequest() || needCalibration)
+  const bool consoleRequest = console.takeGyroCalibrationRequest();
+  const bool webRequest = web.takeGyroCalibrationRequest();
+  if (consoleRequest || webRequest || needCalibration)
   {
     esp_task_wdt_delete(nullptr);  // calibration blocks ~1 s, disarmed only
     mixer.safe();
