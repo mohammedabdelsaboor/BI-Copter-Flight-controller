@@ -1,0 +1,39 @@
+# Code style for the bicopter firmware. Format with:
+#   clang-format -i src/*.ino lib/*/*.cpp lib/*/*.hpp include/*.hpp
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++17
+ColumnLimit: 120
+IndentWidth: 2
+ContinuationIndentWidth: 4
+BreakBeforeBraces: Allman
+IndentAccessModifiers: false
+AccessModifierOffset: -2
+IndentCaseLabels: true
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 2
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignFunctionDeclarations: false
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+SpacesBeforeTrailingComments: 2
+PointerAlignment: Left
+SortIncludes: Never
+IncludeBlocks: Preserve
+FixNamespaceComments: true
+NamespaceIndentation: None
+BinPackArguments: true
+BinPackParameters: true
+AlignAfterOpenBracket: Align
+BreakBeforeBinaryOperators: NonAssignment
+ReflowComments: false
