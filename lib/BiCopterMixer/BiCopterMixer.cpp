@@ -105,8 +105,16 @@ uint16_t BiCopterMixer::tiltToServoUs(float tilt, bool reversed, int16_t trimUs)
 
 uint16_t BiCopterMixer::thrustToEscUs(float thrust) const
 {
+  // Prop thrust grows roughly with the square of the ESC command: thrust = (1-e)*a + e*a^2. Solving for the
+  // command a makes "thrust" really mean thrust, so a roll command gives the same torque at any throttle.
+  const float e = m_config.thrustExpo;
+  float       actuator = clamp01(thrust);
+  if (e > 0.0f)
+  {
+    actuator = ((e - 1.0f) + sqrtf((1.0f - e) * (1.0f - e) + 4.0f * e * actuator)) / (2.0f * e);
+  }
   const float span = static_cast<float>(m_config.escMaxUs - m_config.escIdleUs);
-  return static_cast<uint16_t>(m_config.escIdleUs + lroundf(clamp01(thrust) * span));
+  return static_cast<uint16_t>(m_config.escIdleUs + lroundf(clamp01(actuator) * span));
 }
 
 void BiCopterMixer::apply(const MixerOutputs& outputs)

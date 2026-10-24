@@ -169,6 +169,15 @@ background:#111827;color:#fff;font-size:14px;opacity:0;transition:.2s;pointer-ev
   <div><label for="lvP">Pitch offset (°)</label><input id="lvP" class="ctl" type="number" step="0.1" inputmode="decimal"></div>
  </div>
  <div class="actions"><button class="ctl" onclick="sendLevel()">Apply offsets</button></div>
+ <h2 style="margin:16px 0 4px;font-size:14px">Drift trim</h2>
+ <p class="hint">Hovers moving <b>backwards</b>? Press "nose down". Moving <b>forward</b>? "nose up". 0.5&deg; per press,
+ applied at once; press Save to flash when it stays in place. Sideways drift: use the roll buttons.</p>
+ <div class="row2">
+  <button class="ctl" onclick="nudgeLevel(1,+0.5)">&#9660; Nose down 0.5&deg;</button>
+  <button class="ctl" onclick="nudgeLevel(1,-0.5)">&#9650; Nose up 0.5&deg;</button>
+  <button class="ctl" onclick="nudgeLevel(0,-0.5)">&#9664; Roll left 0.5&deg;</button>
+  <button class="ctl" onclick="nudgeLevel(0,+0.5)">Roll right 0.5&deg; &#9654;</button>
+ </div>
 </section>
 
 <section class="card">
@@ -204,6 +213,7 @@ background:#111827;color:#fff;font-size:14px;opacity:0;transition:.2s;pointer-ev
  <div class="kv"><span class="muted">Arming</span><span id="block">–</span></div>
  <div class="actions"><button class="primary ctl" onclick="act('save')">Save to flash</button>
   <button class="ctl" onclick="act('gyro')">Recalibrate gyro</button>
+  <button class="ctl" onclick="act('hoverReset')">Reset hover balance</button>
   <button class="danger ctl" onclick="if(confirm('Reset level, trims and gains to the Config.hpp defaults?'))act('defaults')">Restore defaults</button></div>
  <h2 style="margin:16px 0 6px;font-size:13px" class="muted">Events</h2>
  <ul id="log"></ul>
@@ -302,6 +312,9 @@ async function post(url,body){try{const r=await fetch(url,{method:'POST',body:ne
  catch(e){toast('no connection to the board',true);return false}}
 async function act(w){if(await post('/api/action',{do:w})&&(w=='defaults'||w=='levelNow'))setTimeout(()=>{fillForms();loadGains()},350)}
 function sendLevel(){post('/api/level',{roll:$('lvR').value,pitch:$('lvP').value})}
+// The controller holds (raw angle - offset) at 0, so offset + 0.5 makes it hold the nose 0.5 deg further down
+async function nudgeLevel(i,d){if(!S)return;const v=[S.level[0],S.level[1]];v[i]=Math.round((v[i]+d)*10)/10;
+ if(await post('/api/level',{roll:v[0],pitch:v[1]})){$('lvR').value=v[0].toFixed(2);$('lvP').value=v[1].toFixed(2)}}
 function setTrim(i,v){trim[i]=Math.max(-300,Math.min(300,Math.round(+v||0)));$('tr'+i).value=trim[i];post('/api/trims',{left:trim[0],right:trim[1]})}
 function nudge(i,d){setTrim(i,trim[i]+d)}
 async function sendGains(){const b={};for(let a=0;a<3;a++){b['p'+a]=W[0][a];b['i'+a]=W[1][a];b['d'+a]=W[2][a];b['a'+a]=W[3][a]}

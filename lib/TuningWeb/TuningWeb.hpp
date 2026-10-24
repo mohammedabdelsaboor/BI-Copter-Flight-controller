@@ -54,7 +54,8 @@ private:
     SET_TRIMS,
     SAVE,
     DEFAULTS,
-    GYRO_CAL
+    GYRO_CAL,
+    HOVER_RESET
   };
 
   struct Request

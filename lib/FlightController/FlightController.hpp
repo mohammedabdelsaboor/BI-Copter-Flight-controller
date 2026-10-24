@@ -50,6 +50,10 @@ struct FlightConfig
   float    hoverTrimMaxDeg;        // limit of the body pitch offset
   float    hoverTrimMinThrottle;   // learn only above this throttle (airborne)
   float    servoDegPerCommand;     // motor tilt in degrees for a pitch command of 1.0
+  // Tilt torque = thrust x tilt, so the servo (pitch/yaw) commands are scaled by hoverThrottle / throttle
+  float    hoverThrottle;          // throttle (thrust) at hover, 0 = no scaling
+  float    servoGainMin;
+  float    servoGainMax;
 };
 
 enum class FlightState : uint8_t
@@ -72,6 +76,7 @@ struct FlightTelemetry
   float        command[3];  // roll, pitch, yaw outputs to the mixer
   float        throttle;
   float        yawI;             // yaw I term: its build-up is what moves the servos apart
+  float        pitchI;           // pitch I term: the steady servo tilt needed to hold the nose
   float        yawGyroDriftDps;  // gyro Z zero-point correction learned while disarmed
   MixerOutputs preview;          // what the outputs would be armed at 50 % throttle
   uint32_t     imuErrors;
@@ -99,6 +104,9 @@ public:
 
   /** Level calibration from the console: stores the current attitude as level (disarmed only). */
   bool calibrateLevel();
+
+  /** Forgets the learned hover tilt and saves that (disarmed only). */
+  bool resetHoverTrim();
 
   bool isArmed() const { return m_state == FlightState::ARMED; }
   FlightState state() const { return m_state; }
@@ -132,7 +140,8 @@ private:
   void setEvent(const char* text);
   void resetPids();
   void trackGyroBias(float dt);
-  void updateHoverTrim(float servoPitchCommand, float throttle, float dt);
+  /** @param steady  pitch close to its target and not rotating: only then is the servo tilt a CG offset */
+  void updateHoverTrim(float servoPitchCommand, float throttle, bool steady, float dt);
   void saveHoverTrim();
 
   Mpu6050&           m_imu;

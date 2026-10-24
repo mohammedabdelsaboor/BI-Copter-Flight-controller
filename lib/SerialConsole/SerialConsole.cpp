@@ -125,6 +125,10 @@ void SerialConsole::handleCommand(char* line)
   {
     m_flight.calibrateLevel();
   }
+  else if (strcmp(line, "hover reset") == 0)
+  {
+    m_flight.resetHoverTrim();
+  }
   else if (sscanf(line, "trim %c %d", &side, &value) == 2)
   {
     const StoredSettings& s = m_settings.get();
@@ -196,6 +200,7 @@ void SerialConsole::printHelp()
   printLine(" g           re-calibrate gyro (keep still)        [disarmed]");
   printLine(" l           save current attitude as level        [disarmed]");
   printLine(" trim l|r N  servo centre trim in us, e.g. trim l 20 [disarmed]");
+  printLine(" hover reset forget the hover tilt learned in flight  [disarmed]");
   printLine(" pid         show gains");
   printLine(" pid r|p|y P I D   set rate gains, e.g. pid y 0.0025 0.003 0 [disarmed]");
   printLine(" ang r|p|y P self-level (r,p) / heading-hold (y) gain       [disarmed]");
@@ -284,10 +289,10 @@ void SerialConsole::printStream()
     {
       const MixerOutputs& o = m_mixer.outputs();
       printf("%s thr %.2f | R %+5.1f P %+5.1f | rate r %+6.1f/%+6.1f p %+6.1f/%+6.1f y %+6.1f/%+6.1f | cmd %+5.2f "
-             "%+5.2f %+5.2f yI %+5.2f | ESC %4u %4u | srv %4u %4u diff %+4d | zdrift %+.2f | hover tilt %+.1f",
+             "%+5.2f %+5.2f yI %+5.2f pI %+5.2f | ESC %4u %4u | srv %4u %4u diff %+4d | zdrift %+.2f | hover tilt %+.1f",
              FlightController::stateName(t.state), t.throttle, t.rollDeg, t.pitchDeg, t.gyroDps[0], t.rateSetDps[0],
              t.gyroDps[1], t.rateSetDps[1], t.gyroDps[2], t.rateSetDps[2], t.command[0], t.command[1], t.command[2],
-             t.yawI, o.escLeftUs, o.escRightUs, o.servoLeftUs, o.servoRightUs,
+             t.yawI, t.pitchI, o.escLeftUs, o.escRightUs, o.servoLeftUs, o.servoRightUs,
              static_cast<int>(o.servoLeftUs) + static_cast<int>(o.servoRightUs) - 3000, t.yawGyroDriftDps,
              t.hoverMotorTiltDeg);
       break;

@@ -57,7 +57,7 @@ static MixerConfig mixerConfig()
   return {cfg::PIN_SERVO_LEFT, cfg::PIN_SERVO_RIGHT, cfg::PIN_ESC_LEFT,        cfg::PIN_ESC_RIGHT,
           cfg::SERVO_HZ,       cfg::ESC_HZ,          cfg::SERVO_CENTER_US,     cfg::SERVO_TRAVEL_US,
           cfg::SERVO_MIN_US,   cfg::SERVO_MAX_US,    cfg::SERVO_LEFT_REVERSED, cfg::SERVO_RIGHT_REVERSED,
-          cfg::ESC_OFF_US,     cfg::ESC_IDLE_US,     cfg::ESC_MAX_US};
+          cfg::ESC_OFF_US,     cfg::ESC_IDLE_US,     cfg::ESC_MAX_US,          cfg::ESC_THRUST_EXPO};
 }
 
 static StickConfig stickConfig()
@@ -99,7 +99,10 @@ static FlightConfig flightConfig()
           cfg::HOVER_TRIM_TAU_S,
           cfg::HOVER_TRIM_MAX_DEG,
           cfg::HOVER_TRIM_MIN_THROTTLE,
-          static_cast<float>(cfg::SERVO_TRAVEL_US) / cfg::SERVO_US_PER_DEG};
+          static_cast<float>(cfg::SERVO_TRAVEL_US) / cfg::SERVO_US_PER_DEG,
+          cfg::HOVER_THROTTLE,
+          cfg::SERVO_GAIN_MIN,
+          cfg::SERVO_GAIN_MAX};
 }
 
 // ---------------------------------------------------------------------------------------------

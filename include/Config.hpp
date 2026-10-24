@@ -66,7 +66,10 @@ inline constexpr uint16_t GYRO_CAL_SAMPLES    = 1000;  // ~1 s at boot, keep the
 inline constexpr float    GYRO_CAL_MAX_MOTION = 4.0f;  // deg/s peak-to-peak allowed during calibration
 
 // Attitude filter: how fast the accelerometer pulls the gyro angle back to level
-inline constexpr float ATTITUDE_ACCEL_TAU_S = 0.8f;
+// Slow on purpose: on a bicopter the accelerometer sees the thrust direction, which tilts with the servos.
+// Trusting it fast (0.8 s) let every servo movement shift the level estimate and the model rocked and drifted.
+// The gyro holds the angle in between; its zero is re-learned every time the model sits still disarmed.
+inline constexpr float ATTITUDE_ACCEL_TAU_S = 3.0f;
 inline constexpr float ATTITUDE_ACCEL_MIN_G = 0.80f;   // accel ignored outside this window (manoeuvres, bumps)
 inline constexpr float ATTITUDE_ACCEL_MAX_G = 1.20f;
 
@@ -132,6 +135,9 @@ inline constexpr uint32_t ESC_HZ               = 400;
 inline constexpr uint16_t ESC_OFF_US           = 1000;   // disarmed
 inline constexpr uint16_t ESC_IDLE_US          = 1100;   // armed with throttle low, motors spin slowly
 inline constexpr uint16_t ESC_MAX_US           = 1950;
+// Thrust linearisation (ArduPilot MOT_THST_EXPO). 0 = off. With 0.65 the throttle stick is thrust, so the
+// hover point moves lower on the stick (roughly 60 % before -> 45 % now).
+inline constexpr float    ESC_THRUST_EXPO      = 0.65f;
 
 // ============================================================================
 //  Flight control (self-levelling "angle" mode, cascaded angle -> rate PID)
@@ -149,25 +155,40 @@ inline constexpr float MAX_RATE_PITCH_DPS  = 90.0f;   // servos are slow, do not
 inline constexpr float HEADING_HOLD_P      = 1.5f;
 
 // Inner loop: rate error (deg/s) -> normalised output (-1..1)
+// Pitch I limit 0.50: in a logged throttle sweep this model needed ~0.3-0.45 of steady pitch command (motors
+// ~10-15 deg forward) from 30 % throttle up. With the old 0.25 limit the I term saturated and the model hung
+// 20-25 deg nose-up and backed away. Output limit 0.70 = +-25 deg of servo tilt.
 //                                   P        I        D        I limit  out limit  D filter Hz
 inline constexpr PidGains PID_ROLL  = {0.0016f, 0.0030f, 0.00004f, 0.15f,   0.35f,     30.0f};  // motors
-inline constexpr PidGains PID_PITCH = {0.0025f, 0.0040f, 0.0f,     0.25f,   0.60f,     30.0f};  // servos together
+inline constexpr PidGains PID_PITCH = {0.0025f, 0.0040f, 0.0f,     0.50f,   0.70f,     30.0f};  // servos together
 inline constexpr PidGains PID_YAW   = {0.0025f, 0.0030f, 0.0f,     0.30f,   0.60f,     30.0f};  // servos opposite
 
 // Filters. MG996R servos cannot follow anything above ~10 Hz; feeding them gyro noise / motor vibration
 // makes them buzz in their gear backlash. Roll is driven by the fast motors so it keeps a higher cutoff.
 inline constexpr float GYRO_LPF_ROLL_HZ    = 80.0f;
-inline constexpr float GYRO_LPF_PITCH_HZ   = 25.0f;
+inline constexpr float GYRO_LPF_PITCH_HZ   = 40.0f;   // was 25: less delay in the pitch loop
 inline constexpr float GYRO_LPF_YAW_HZ     = 25.0f;
-inline constexpr float SERVO_CMD_LPF_HZ    = 10.0f;   // smoothing of the pitch/yaw servo commands
+// Was 10 Hz: that filter alone delayed a 3 Hz wobble by ~17 deg and made the pitch loop swing at any useful P.
+inline constexpr float SERVO_CMD_LPF_HZ    = 20.0f;   // smoothing of the pitch/yaw servo commands
 
 // Hover tilt compensation. A CG a few mm ahead of/behind the rotor axis makes the servos hold the motors
 // tilted in hover, which pushes the model forward/back all the time. The firmware learns that tilt and pitches
 // the body the opposite way so the thrust points straight up. Kept across arms, cleared at power-off.
-inline constexpr bool  HOVER_TRIM_ENABLED      = true;
+// false: the tilt is still learned and shown on the web page ("Hover balance", a CG meter) but the body is not
+// tilted. On this model the learned value (+5..7 deg) came from flights that were still swinging and the
+// correction pushed it backwards: balance the CG first (until the meter reads under ~2 deg), then try true.
+inline constexpr bool  HOVER_TRIM_ENABLED      = false;
 inline constexpr float HOVER_TRIM_TAU_S        = 3.0f;    // seconds to follow a change
-inline constexpr float HOVER_TRIM_MAX_DEG      = 10.0f;   // more than this: fix the CG instead
+inline constexpr float HOVER_TRIM_MAX_DEG      = 6.0f;    // more than this: fix the CG instead
 inline constexpr float HOVER_TRIM_MIN_THROTTLE = 0.30f;   // learn only when airborne
+
+// Servo gain scaling with thrust: gains are tuned at HOVER_THROTTLE and scaled by HOVER_THROTTLE / throttle.
+// Set HOVER_THROTTLE to the throttle the model hovers at (shown on the web page). 0 switches scaling off.
+inline constexpr float HOVER_THROTTLE          = 0.45f;
+// 1.0: never weaken the servos above hover. More throttle also loads the servo/bracket more and the motors
+// get pushed back (measured: the model tilts back as throttle rises), so full correction is needed there.
+inline constexpr float SERVO_GAIN_MIN          = 1.00f;
+inline constexpr float SERVO_GAIN_MAX          = 1.50f;
 
 // Flip a correction if that axis fights instead of resisting (docs/SETUP_AND_TUNING.md, bench checks)
 inline constexpr bool REVERSE_ROLL_CORRECTION  = false;

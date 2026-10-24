@@ -271,12 +271,24 @@ void FlightController::runControl(const Sticks& sticks, float dt)
   float       cmdRoll = m_pidRoll.update(rateRoll, gyroRoll, dt, flying);
   float       cmdPitch = m_pidPitch.update(ratePitch, gyroPitch, dt, flying);
   float       cmdYaw = m_pidYaw.update(rateYaw, gyroYaw, dt, flying);
+  // A tilted motor turns the model with (thrust x tilt): weak at low throttle, strong at high throttle.
+  // Scale the servo commands so the gains act the same at any throttle (ArduPilot vectored thrust scaling).
+  if (armed && (m_config.hoverThrottle > 0.0f))
+  {
+    const float scale = m_config.hoverThrottle / fmaxf(sticks.throttle, 0.01f);
+    const float gain = constrain(scale, m_config.servoGainMin, m_config.servoGainMax);
+    cmdPitch *= gain;
+    cmdYaw *= gain;
+  }
   if (m_config.reverseRoll) cmdRoll = -cmdRoll;
   if (m_config.reversePitch) cmdPitch = -cmdPitch;
   if (m_config.reverseYaw) cmdYaw = -cmdYaw;
   cmdPitch = m_servoPitchFilter.apply(cmdPitch);
   cmdYaw = m_servoYawFilter.apply(cmdYaw);
-  updateHoverTrim(cmdPitch, armed ? sticks.throttle : 0.0f, dt);
+  constexpr float STEADY_PITCH_ERROR_DEG = 5.0f;
+  constexpr float STEADY_PITCH_RATE_DPS = 15.0f;
+  const bool      steady = (fabsf(pitchSet - pitch) < STEADY_PITCH_ERROR_DEG) && (fabsf(gyroPitch) < STEADY_PITCH_RATE_DPS);
+  updateHoverTrim(cmdPitch, armed ? sticks.throttle : 0.0f, steady, dt);
 
   // On the ground at idle the motors must not react (would lift one side and tip over)
   const float motorRoll = flying ? cmdRoll : 0.0f;
@@ -298,6 +310,7 @@ void FlightController::runControl(const Sticks& sticks, float dt)
   m_telemetry.command[2] = cmdYaw;
   m_telemetry.throttle = sticks.throttle;
   m_telemetry.yawI = m_pidYaw.i();
+  m_telemetry.pitchI = m_pidPitch.i();
   m_telemetry.yawGyroDriftDps = m_gyroDrift[2];
   m_telemetry.preview = m_mixer.mix({0.5f, cmdRoll, cmdPitch, cmdYaw}, true);
   m_telemetry.imuErrors = m_imu.errorCount();
@@ -307,19 +320,16 @@ void FlightController::runControl(const Sticks& sticks, float dt)
   m_telemetry.hoverPitchTrimDeg = m_hoverPitchTrimDeg;
 }
 
-void FlightController::updateHoverTrim(float servoPitchCommand, float throttle, float dt)
+void FlightController::updateHoverTrim(float servoPitchCommand, float throttle, bool steady, float dt)
 {
   // The tilt rotors sit above the centre of gravity. With the CG a little ahead of or behind the rotor axis,
   // the motors must stay tilted (relative to the body) to balance it: tilt = atan(CG offset / rotor height).
   // That tilt does not depend on the body angle, so a level body means a tilted thrust and a constant push
   // forward or back. Learn the average hover tilt and pitch the body the other way by the same amount:
   // the thrust then points straight up and the drift stops, while the body hangs at a slight angle.
-  if (!m_config.hoverTrimEnabled)
-  {
-    m_hoverMotorTiltDeg = m_hoverPitchTrimDeg = 0.0f;
-    return;
-  }
-  if (throttle > m_config.hoverTrimMinThrottle)
+  // Learn only in a steady hover: while swinging, held by hand or manoeuvring the servo tilt is the
+  // correction of the moment, not the CG offset, and learning it once gave a wrong 10 deg offset.
+  if ((throttle > m_config.hoverTrimMinThrottle) && steady)
   {
     const float tiltDeg = servoPitchCommand * m_config.servoDegPerCommand;  // + = motors tilted forward
     const float k = dt / (m_config.hoverTrimTauS + dt);
@@ -328,9 +338,34 @@ void FlightController::updateHoverTrim(float servoPitchCommand, float throttle, 
   }
   // Motors forward (+) -> nose up (pitch -) by the same angle. Faded in from the I-term throttle up to the
   // learning throttle: on the ground a body pitch demand would only tilt the motors and push at lift-off.
+  // Disabled: keep learning (the web page shows it as a CG meter) but do not tilt the body
+  if (!m_config.hoverTrimEnabled)
+  {
+    m_hoverPitchTrimDeg = 0.0f;
+    return;
+  }
   const float span = m_config.hoverTrimMinThrottle - m_config.throttleIEnable;
   const float fade = (span > 0.0f) ? constrain((throttle - m_config.throttleIEnable) / span, 0.0f, 1.0f) : 1.0f;
   m_hoverPitchTrimDeg = fade * clampAbs(-m_hoverMotorTiltDeg, m_config.hoverTrimMaxDeg);
+}
+
+bool FlightController::resetHoverTrim()
+{
+  if (m_state != FlightState::DISARMED)
+  {
+    setEvent("hover reset refused: not disarmed");
+    return false;
+  }
+  m_hoverMotorTiltDeg = m_hoverPitchTrimDeg = 0.0f;
+  m_hoverLearnS = 0.0f;
+  m_settings.setHoverTilt(0.0f);
+  const bool ok = m_settings.save();
+  if (ok)
+  {
+    m_hoverSavedDeg = 0.0f;
+  }
+  setEvent(ok ? "hover balance reset + saved" : "hover reset: flash write failed");
+  return ok;
 }
 
 void FlightController::saveHoverTrim()
@@ -340,7 +375,7 @@ void FlightController::saveHoverTrim()
   constexpr float MIN_CHANGE_DEG = 0.3f;
   const bool learned = m_hoverLearnS >= MIN_LEARN_S;
   m_hoverLearnS = 0.0f;
-  if (!m_config.hoverTrimEnabled || !learned || (fabsf(m_hoverMotorTiltDeg - m_hoverSavedDeg) < MIN_CHANGE_DEG))
+  if (!learned || (fabsf(m_hoverMotorTiltDeg - m_hoverSavedDeg) < MIN_CHANGE_DEG))
   {
     return;
   }

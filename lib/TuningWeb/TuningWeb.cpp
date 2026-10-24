@@ -214,6 +214,11 @@ void TuningWeb::apply(const Request& request)
         snprintf(reply, sizeof(reply), "back to Config.hpp defaults - press Save to keep them");
         break;
 
+      case Action::HOVER_RESET:
+        snprintf(reply, sizeof(reply), "%s",
+                 m_flight.resetHoverTrim() ? "hover balance reset and saved" : "hover reset failed");
+        break;
+
       case Action::GYRO_CAL:
         m_gyroCalRequest = true;
         snprintf(reply, sizeof(reply), "gyro calibration started - keep the model still");
@@ -467,6 +472,8 @@ void TuningWeb::handleAction()
     request.action = Action::DEFAULTS;
   else if (name == "gyro")
     request.action = Action::GYRO_CAL;
+  else if (name == "hoverReset")
+    request.action = Action::HOVER_RESET;
   else
   {
     m_server->send(400, "text/plain", "unknown action");

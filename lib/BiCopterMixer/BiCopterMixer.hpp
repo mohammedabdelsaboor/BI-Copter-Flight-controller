@@ -31,6 +31,7 @@ struct MixerConfig
   uint16_t escOffUs;
   uint16_t escIdleUs;
   uint16_t escMaxUs;
+  float    thrustExpo;  // 0 = linear PWM, 0.65 = typical prop curve (ArduPilot MOT_THST_EXPO)
 };
 
 /** throttle 0..1, roll/pitch/yaw -1..1 */
