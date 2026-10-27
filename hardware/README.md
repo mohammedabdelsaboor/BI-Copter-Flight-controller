@@ -3,9 +3,10 @@
 The two printed parts used on the model. Both are existing designs from Thingiverse, included here unchanged
 with their original licence files so the airframe can be rebuilt. Credit belongs to their authors.
 
-![The two parts rendered from their STL files: (a) motor mount, two variants, (b) servo mount](../docs/figures/fig8_mechanism_parts.png)
+![The two parts in use: (a, b) motor mount with motors and propellers, (c, d) servo mount with a servo](../docs/figures/fig8_mechanism_photos.jpg)
 
-*Rendered from the STL files with [tools/render_parts.py](../tools/render_parts.py).*
+*(a, b) Motor mount, photos by protorobotics (CC BY-SA). (c, d) Servo mount, photos by sternli27 (CC BY). Both
+from the designs' Thingiverse pages; the original photos are in each part's `images/` folder.*
 
 | Part | Used for | Files | Author and source | Licence |
 |---|---|---|---|---|

@@ -359,9 +359,11 @@ right motor = throttle - roll          right servo = pitch + yaw
         p("The tilt mechanism is built from two 3D-printed parts at each end of the arm, shown in Figure 2: a mount "
           "that carries the motor and turns about the servo's output shaft, and a holder that fixes the MG996R "
           "servo to the arm. Both are existing Thingiverse designs, credited in hardware/README.md."),
-        figure("fig8_mechanism_parts.png",
-               "Figure 2. The 3D-printed tilt mechanism parts, rendered from their STL files: (a) motor mount "
-               "(the file contains two variants), (b) servo mount."),
+        figure("fig8_mechanism_photos.jpg",
+               "Figure 2. The 3D-printed tilt mechanism parts in use: (a, b) motor mount with two different "
+               "brushless motors and propellers, (c) servo mount with a servo fitted, (d) servo mount installed. "
+               "Photos (a, b): protorobotics, CC BY-SA; (c, d): sternli27, CC BY; both from Thingiverse.",
+               width_mm=150),
         p("Axes and signs", "h2"),
         p("The whole firmware uses one body frame: X points to the nose, Y to the left motor and Z up. Positive "
           "roll means the right side goes down, positive pitch means the nose goes down, and positive yaw means "

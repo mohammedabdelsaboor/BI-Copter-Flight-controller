@@ -51,10 +51,11 @@ Pin assignment, power wiring and sensor mounting are documented in Appendix A,
 [docs/WIRING.md](docs/WIRING.md). The 3D-printed motor and servo mounts, existing Thingiverse designs credited to
 their authors, are in [hardware/](hardware/).
 
-![Figure 1. The 3D-printed tilt mechanism parts: motor mount and servo mount](docs/figures/fig8_mechanism_parts.png)
+![Figure 1. The 3D-printed tilt mechanism parts in use: motor mounts and servo mounts](docs/figures/fig8_mechanism_photos.jpg)
 
-*Figure 1. The 3D-printed tilt mechanism parts, rendered from their STL files: (a) motor mount (the file holds two
-variants), (b) servo mount. Each motor mount turns about the servo's output shaft.*
+*Figure 1. The 3D-printed tilt mechanism parts in use: (a, b) motor mount with two different brushless motors
+and propellers, (c) servo mount with a servo fitted, (d) servo mount installed. Photos (a, b): protorobotics,
+CC BY-SA; (c, d): sternli27, CC BY; both from Thingiverse.*
 
 ### 2.2 Coordinate frame
 
@@ -156,7 +157,6 @@ bi_copter_firmware/
 ├── tools/
 │   ├── flight_log.py           records the console stream during a test
 │   ├── make_figures.py         builds the result figures from data and simulation
-│   ├── render_parts.py         renders the 3D-printed parts for the documents
 │   ├── make_guide.py           generates the PDF guide
 │   └── sim/attitude_sim.cpp    attitude filter simulation using the firmware code
 └── docs/

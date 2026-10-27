@@ -15,6 +15,7 @@ the image) so they can be used with captions in the PDF guide and the README.
   fig5  measured   commanded vs measured rate, roll and pitch              same flight
   fig6  measured   motor and servo outputs                                 same flight
   fig7  measured   RMS rate tracking error per axis                        same flight
+  fig8  photos     the 3D-printed tilt mechanism parts in use               hardware/3d-parts/*/images
 
 The script also prints the flight statistics that the PDF table uses.
 """
@@ -333,12 +334,45 @@ def figure7(s):
     return save(fig, "fig7_tracking_error.png")
 
 
+def figure8():
+    """2 x 2 grid of the designers' photos of the printed parts, each cropped to the same 4:3 frame."""
+    from PIL import Image
+
+    photos = [
+        ("hardware/3d-parts/brushless-motor-mount/images/20191129_131905.jpg", "(a)"),
+        ("hardware/3d-parts/brushless-motor-mount/images/20191129_131836.jpg", "(b)"),
+        ("hardware/3d-parts/servo-mount/images/pic1.jpg", "(c)"),
+        ("hardware/3d-parts/servo-mount/images/pic3.jpg", "(d)"),
+    ]
+    fig, axes = plt.subplots(2, 2, figsize=(TEXT_WIDTH_IN, TEXT_WIDTH_IN * 0.75),
+                             gridspec_kw={"wspace": 0.03, "hspace": 0.03})
+    for ax, (path, label) in zip(axes.flat, photos):
+        img = Image.open(os.path.join(ROOT, path)).convert("RGB")
+        w, h = img.size
+        target = 4 / 3
+        if w / h > target:  # too wide: crop the sides
+            new_w = int(h * target)
+            img = img.crop(((w - new_w) // 2, 0, (w + new_w) // 2, h))
+        else:  # too tall: crop top and bottom
+            new_h = int(w / target)
+            img = img.crop((0, (h - new_h) // 2, w, (h + new_h) // 2))
+        img = img.resize((1200, 900), Image.LANCZOS)
+        ax.imshow(img)
+        ax.set_axis_off()
+        ax.text(0.02, 0.97, label, transform=ax.transAxes, va="top", ha="left", fontsize=9, color=INK,
+                bbox=dict(facecolor="white", edgecolor="none", pad=1.5, alpha=0.9))
+    path = os.path.join(FIG_DIR, "fig8_mechanism_photos.jpg")  # photographs: JPEG is a quarter of the size
+    fig.savefig(path, pil_kwargs={"quality": 88})
+    plt.close(fig)
+    return path
+
+
 def main():
     os.makedirs(FIG_DIR, exist_ok=True)
     flight = load_flight()
     stats = flight_stats(flight)
     for path in (figure1(), figure2(run_attitude_sim()), figure3(), figure4(flight, stats), figure5(flight),
-                 figure6(flight, stats), figure7(stats)):
+                 figure6(flight, stats), figure7(stats), figure8()):
         print("wrote", os.path.relpath(path, ROOT))
     print("\nflight statistics (airborne, throttle > 0.3):")
     print(f"  airborne {stats['airborne_s']:.1f} s at throttle {stats['throttle']:.2f}")
