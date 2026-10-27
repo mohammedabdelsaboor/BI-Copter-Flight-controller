@@ -48,7 +48,8 @@ A complete write-up, with the derivations, figures and the full reference list, 
 | Servo supply | 5–6 V UBEC | keeps servo current off the controller |
 
 Pin assignment, power wiring and sensor mounting are documented in Appendix A,
-[docs/WIRING.md](docs/WIRING.md).
+[docs/WIRING.md](docs/WIRING.md). The 3D-printed motor and servo mounts, existing Thingiverse designs credited to
+their authors, are in [hardware/](hardware/).
 
 ### 2.2 Coordinate frame
 
@@ -146,6 +147,7 @@ bi_copter_firmware/
 │   ├── SerialConsole/          USB command line and live data streams
 │   └── TuningWeb/              WiFi tuning page and flight recorder
 ├── CITATION.cff                citation metadata
+├── hardware/3d-parts/          printed motor and servo mounts (STL, STEP), with their licences
 ├── tools/
 │   ├── flight_log.py           records the console stream during a test
 │   ├── make_figures.py         builds the result figures from data and simulation
