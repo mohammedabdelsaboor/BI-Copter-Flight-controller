@@ -16,10 +16,10 @@ The full write-up (how a bicopter flies, the firmware design, the setup procedur
 
 ## Test flight
 
-Hand-held test with the motors running: the servos tilt the motors to hold the frame level as it is moved.
-Click the clip for the full 40-second video.
+Hover test on a tether: the model lifts off the hand and the controller holds it level while the servos keep
+correcting pitch. Click the clip for the full 18-second video.
 
-[![Hand-held test flight: the servos tilt the motors to keep the frame level](docs/media/test_flight.gif)](docs/media/test_flight.mp4)
+[![Tethered hover test: the bicopter lifts off the hand and holds itself level](docs/media/test_bi.gif)](docs/media/test_bi.mp4)
 
 ## Hardware
 
@@ -71,7 +71,7 @@ bi_copter_firmware/
 │   ├── flight_log.py         records the console to a file during a test
 │   └── make_guide.py         rebuilds the PDF guide
 └── docs/
-    ├── media/                photo of the model, test flight video and a short GIF of it
+    ├── media/                photo of the model, hover test video and a short GIF of it
     ├── BiCopter_Project_Guide.pdf
     ├── WIRING.md
     └── SETUP_AND_TUNING.md
