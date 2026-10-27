@@ -9,6 +9,28 @@ float clampAbs(float v, float limit)
 {
   return (v > limit) ? limit : ((v < -limit) ? -limit : v);
 }
+
+/**
+ * ArduPilot's sqrt_controller: linear (error * p) close to the target, then sqrt(2 * accel * error), so the
+ * rate demand never asks for more deceleration than accelMax can deliver and big errors are not over-driven.
+ */
+float sqrtController(float error, float p, float accelMax)
+{
+  if ((accelMax <= 0.0f) || (p <= 0.0f))
+  {
+    return error * p;
+  }
+  const float linearDist = accelMax / (p * p);
+  if (error > linearDist)
+  {
+    return sqrtf(2.0f * accelMax * (error - linearDist / 2.0f));
+  }
+  if (error < -linearDist)
+  {
+    return -sqrtf(2.0f * accelMax * (-error - linearDist / 2.0f));
+  }
+  return error * p;
+}
 }  // namespace
 
 FlightController::FlightController(Mpu6050& imu, AttitudeEstimator& attitude, StickInput& sticks, BiCopterMixer& mixer,
@@ -30,6 +52,8 @@ void FlightController::configure(const FlightConfig& config)
   }
   m_servoPitchFilter.configure(config.servoFilterHz, config.loopHz);
   m_servoYawFilter.configure(config.servoFilterHz, config.loopHz);
+  m_servoPitchLead.configure(config.servoLeadS, config.servoLeadFilterHz, config.servoLeadMax, config.loopHz);
+  m_servoYawLead.configure(config.servoLeadS, config.servoLeadFilterHz, config.servoLeadMax, config.loopHz);
 }
 
 void FlightController::start()
@@ -249,9 +273,21 @@ void FlightController::runControl(const Sticks& sticks, float dt)
   const float rollSet = sticks.roll * m_config.maxAngleDeg;  // stick right -> right side down
   // stick forward -> nose down, plus the hover offset that keeps the thrust vertical
   const float pitchSet = sticks.pitch * m_config.maxAngleDeg + m_hoverPitchTrimDeg;
-  const float rateRoll = clampAbs(m_config.angleProll * (rollSet - roll), m_config.maxRateRollDps);
-  const float ratePitch = clampAbs(m_config.anglePpitch * (pitchSet - pitch), m_config.maxRatePitchDps);
-  const bool  flying = armed && (sticks.throttle > m_config.throttleIEnable);
+  const float rateRoll = clampAbs(sqrtController(rollSet - roll, m_config.angleProll, m_config.angleAccelMaxRoll),
+                                  m_config.maxRateRollDps);
+  const float ratePitch = clampAbs(sqrtController(pitchSet - pitch, m_config.anglePpitch, m_config.angleAccelMaxPitch),
+                                   m_config.maxRatePitchDps);
+  // Airborne latch. Sitting on the ground with the motors spooling, the frame cannot respond, so an I term
+  // would wind up and tilt the servos 20-25 deg before lift-off; the model then shot forward on take-off.
+  if (!armed || (sticks.throttle <= m_config.throttleIEnable))
+  {
+    m_airborne = false;
+  }
+  else if (sticks.throttle >= m_config.liftoffThrottle)
+  {
+    m_airborne = true;
+  }
+  const bool  flying = armed && m_airborne;
   const float gyroRoll = m_gyroFilter[0].apply(m_sample.gyroDps[0]);
   const float gyroPitch = m_gyroFilter[1].apply(m_sample.gyroDps[1]);
   const float gyroYaw = m_gyroFilter[2].apply(m_sample.gyroDps[2]);
@@ -283,16 +319,28 @@ void FlightController::runControl(const Sticks& sticks, float dt)
   if (m_config.reverseRoll) cmdRoll = -cmdRoll;
   if (m_config.reversePitch) cmdPitch = -cmdPitch;
   if (m_config.reverseYaw) cmdYaw = -cmdYaw;
+  // Start the servos at the tilt this model needed in its last steady hover, so the I term does not have to
+  // build it up for 2-3 s after every take-off. Faded in like the I term, frozen for the whole flight.
+  if (armed && (m_servoPitchFf != 0.0f))
+  {
+    const float span = m_config.hoverTrimMinThrottle - m_config.throttleIEnable;
+    const float fade =
+        (span > 0.0f) ? constrain((sticks.throttle - m_config.throttleIEnable) / span, 0.0f, 1.0f) : 1.0f;
+    cmdPitch += fade * m_servoPitchFf;
+  }
   cmdPitch = m_servoPitchFilter.apply(cmdPitch);
   cmdYaw = m_servoYawFilter.apply(cmdYaw);
   constexpr float STEADY_PITCH_ERROR_DEG = 5.0f;
   constexpr float STEADY_PITCH_RATE_DPS = 15.0f;
-  const bool      steady = (fabsf(pitchSet - pitch) < STEADY_PITCH_ERROR_DEG) && (fabsf(gyroPitch) < STEADY_PITCH_RATE_DPS);
-  updateHoverTrim(cmdPitch, armed ? sticks.throttle : 0.0f, steady, dt);
+  const bool steady = (fabsf(pitchSet - pitch) < STEADY_PITCH_ERROR_DEG) && (fabsf(gyroPitch) < STEADY_PITCH_RATE_DPS);
+  updateHoverTrim(cmdPitch, flying ? sticks.throttle : 0.0f, steady, dt);  // never learn on the ground
 
   // On the ground at idle the motors must not react (would lift one side and tip over)
   const float motorRoll = flying ? cmdRoll : 0.0f;
-  m_mixer.write({sticks.throttle, motorRoll, cmdPitch, cmdYaw}, armed);
+  // Lead goes last, after hover learning, so the short boosts are not mistaken for a hover tilt
+  const float servoPitch = m_servoPitchLead.apply(cmdPitch, dt);
+  const float servoYaw = m_servoYawLead.apply(cmdYaw, dt);
+  m_mixer.write({sticks.throttle, motorRoll, servoPitch, servoYaw}, armed);
 
   m_telemetry.state = m_state;
   m_telemetry.rollDeg = roll;
@@ -311,11 +359,15 @@ void FlightController::runControl(const Sticks& sticks, float dt)
   m_telemetry.throttle = sticks.throttle;
   m_telemetry.yawI = m_pidYaw.i();
   m_telemetry.pitchI = m_pidPitch.i();
+  m_telemetry.pitchSlewMod = m_pidPitch.slewModifier();
   m_telemetry.yawGyroDriftDps = m_gyroDrift[2];
   m_telemetry.preview = m_mixer.mix({0.5f, cmdRoll, cmdPitch, cmdYaw}, true);
   m_telemetry.imuErrors = m_imu.errorCount();
   m_telemetry.imuId = m_imu.whoAmI();
   m_telemetry.accelUsed = m_attitude.accelUsed();
+  m_telemetry.accelTrust = m_attitude.accelWeight();
+  m_telemetry.attBiasDps[0] = -m_attitude.gyroBiasDps(0);  // the filter adds -error, show the error itself
+  m_telemetry.attBiasDps[1] = -m_attitude.gyroBiasDps(1);
   m_telemetry.hoverMotorTiltDeg = m_hoverMotorTiltDeg;
   m_telemetry.hoverPitchTrimDeg = m_hoverPitchTrimDeg;
 }
@@ -373,7 +425,7 @@ void FlightController::saveHoverTrim()
   // After a flight long enough to have learned something, and only if it changed: flash wears out
   constexpr float MIN_LEARN_S = 5.0f;
   constexpr float MIN_CHANGE_DEG = 0.3f;
-  const bool learned = m_hoverLearnS >= MIN_LEARN_S;
+  const bool      learned = m_hoverLearnS >= MIN_LEARN_S;
   m_hoverLearnS = 0.0f;
   if (!learned || (fabsf(m_hoverMotorTiltDeg - m_hoverSavedDeg) < MIN_CHANGE_DEG))
   {
@@ -426,6 +478,9 @@ void FlightController::forceDisarm(const char* reason)
 void FlightController::arm()
 {
   resetPids();
+  m_servoPitchFf = (m_config.servoHoverFeedForward && (m_config.servoDegPerCommand > 0.0f))
+                       ? clampAbs(m_hoverMotorTiltDeg, m_config.hoverTrimMaxDeg) / m_config.servoDegPerCommand
+                       : 0.0f;
   m_state = FlightState::ARMED;
   m_disarmGestureMs = millis();
   m_throttleLowSinceMs = millis();
@@ -447,6 +502,8 @@ void FlightController::resetPids()
   m_pidRoll.reset();
   m_pidPitch.reset();
   m_pidYaw.reset();
+  m_servoPitchLead.reset();
+  m_servoYawLead.reset();
 }
 
 void FlightController::setEvent(const char* text)
@@ -515,6 +572,13 @@ void FlightController::applyGains(const StoredGains& gains)
   setAngleP(0, gains.angleP[0]);
   setAngleP(1, gains.angleP[1]);
   setAngleP(2, gains.angleP[2]);
+}
+
+void FlightController::setServoLead(float leadS)
+{
+  m_config.servoLeadS = leadS;
+  m_servoPitchLead.configure(leadS, m_config.servoLeadFilterHz, m_config.servoLeadMax, m_config.loopHz);
+  m_servoYawLead.configure(leadS, m_config.servoLeadFilterHz, m_config.servoLeadMax, m_config.loopHz);
 }
 
 void FlightController::restoreDefaultGains()

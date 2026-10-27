@@ -17,17 +17,22 @@
 #include "BiCopterMixer.hpp"
 #include "Settings.hpp"
 #include "Pid.hpp"
+#include "LeadCompensator.hpp"
 
 struct FlightConfig
 {
-  float    loopHz;
-  float    maxAngleDeg;
-  float    maxYawRateDps;
-  float    angleProll;
-  float    anglePpitch;
-  float    headingP;  // heading hold gain, 0 = off
-  float    maxRateRollDps;
-  float    maxRatePitchDps;
+  float loopHz;
+  float maxAngleDeg;
+  float maxYawRateDps;
+  float angleProll;
+  float anglePpitch;
+  float headingP;  // heading hold gain, 0 = off
+  float maxRateRollDps;
+  float maxRatePitchDps;
+  // Square-root angle controller (ArduPilot ATC_ACCEL_R/P_MAX), deg/s^2, 0 = plain P: near level the angle
+  // P acts fully, far from level the rate demand only grows with sqrt(error) so the servos are not slammed
+  float    angleAccelMaxRoll;
+  float    angleAccelMaxPitch;
   PidGains roll;
   PidGains pitch;
   PidGains yaw;
@@ -45,15 +50,23 @@ struct FlightConfig
   float    gyroFilterHz[3];  // roll, pitch, yaw gyro low pass, 0 = off
   float    servoFilterHz;    // low pass on the pitch/yaw (servo) commands, 0 = off
   // Hover tilt compensation, see FlightController::updateHoverTrim()
-  bool     hoverTrimEnabled;
-  float    hoverTrimTauS;          // how fast the learned motor tilt follows, s
-  float    hoverTrimMaxDeg;        // limit of the body pitch offset
-  float    hoverTrimMinThrottle;   // learn only above this throttle (airborne)
-  float    servoDegPerCommand;     // motor tilt in degrees for a pitch command of 1.0
+  bool  hoverTrimEnabled;
+  bool  servoHoverFeedForward;  // start each flight with the servos at the learned hover tilt
+  float hoverTrimTauS;          // how fast the learned motor tilt follows, s
+  float hoverTrimMaxDeg;        // limit of the body pitch offset
+  float hoverTrimMinThrottle;   // learn only above this throttle (airborne)
+  float servoDegPerCommand;     // motor tilt in degrees for a pitch command of 1.0
   // Tilt torque = thrust x tilt, so the servo (pitch/yaw) commands are scaled by hoverThrottle / throttle
-  float    hoverThrottle;          // throttle (thrust) at hover, 0 = no scaling
-  float    servoGainMin;
-  float    servoGainMax;
+  float hoverThrottle;  // throttle (thrust) at hover, 0 = no scaling
+  float servoGainMin;
+  float servoGainMax;
+  // Take-off detection: I terms, heading hold, roll on the motors and hover learning switch on when the
+  // throttle reaches this, and off again only below throttleIEnable (near idle)
+  float liftoffThrottle;
+  // Phase lead on the pitch/yaw servo commands, makes slow servos start moving sooner (see LeadCompensator)
+  float servoLeadS;  // 0 = off
+  float servoLeadFilterHz;
+  float servoLeadMax;  // largest extra command
 };
 
 enum class FlightState : uint8_t
@@ -77,11 +90,14 @@ struct FlightTelemetry
   float        throttle;
   float        yawI;             // yaw I term: its build-up is what moves the servos apart
   float        pitchI;           // pitch I term: the steady servo tilt needed to hold the nose
+  float        pitchSlewMod;     // pitch P/D scale from the slew limiter (1 = full, lower = damping)
   float        yawGyroDriftDps;  // gyro Z zero-point correction learned while disarmed
   MixerOutputs preview;          // what the outputs would be armed at 50 % throttle
   uint32_t     imuErrors;
-  uint8_t      imuId;      // WHO_AM_I
-  bool         accelUsed;  // accelerometer accepted by the attitude filter this loop
+  uint8_t      imuId;              // WHO_AM_I
+  bool         accelUsed;          // accelerometer accepted by the attitude filter this loop
+  float        accelTrust;         // 0..1, how much the attitude filter trusted the accelerometer
+  float        attBiasDps[2];      // gyro zero error (roll, pitch) learned by the attitude filter
   float        hoverMotorTiltDeg;  // learned average motor tilt in hover, + = forward
   float        hoverPitchTrimDeg;  // body pitch offset that cancels it, + = nose down
 };
@@ -130,6 +146,9 @@ public:
   StoredGains exportGains() const;
   void applyGains(const StoredGains& gains);
   void restoreDefaultGains();
+  /** Servo lead time in seconds, takes effect immediately (not saved; set SERVO_LEAD_S in Config.hpp to keep). */
+  void setServoLead(float leadS);
+  float servoLead() const { return m_config.servoLeadS; }
 
 private:
   void runStateMachine(const Sticks& sticks, uint32_t nowMs);
@@ -158,6 +177,8 @@ private:
   Pt1Filter       m_gyroFilter[3];
   Pt1Filter       m_servoPitchFilter;
   Pt1Filter       m_servoYawFilter;
+  LeadCompensator m_servoPitchLead;
+  LeadCompensator m_servoYawLead;
   ImuSample       m_sample = {};
   FlightTelemetry m_telemetry = {};
 
@@ -174,11 +195,13 @@ private:
   float       m_accelZOffsetG = 0.0f;               // measured at start(), see there
   float       m_gyroDrift[3] = {0.0f, 0.0f, 0.0f};  // deg/s, see trackGyroBias()
   float       m_stillTimeS = 0.0f;
-  float       m_headingErrorDeg = 0.0f;  // heading hold: target minus actual heading
+  float       m_headingErrorDeg = 0.0f;    // heading hold: target minus actual heading
   float       m_hoverMotorTiltDeg = 0.0f;  // learned in flight, saved to flash after each flight
   float       m_hoverPitchTrimDeg = 0.0f;
-  float       m_hoverSavedDeg = 0.0f;      // value last written to flash
-  float       m_hoverLearnS = 0.0f;        // time spent learning this flight
+  float       m_hoverSavedDeg = 0.0f;  // value last written to flash
+  float       m_hoverLearnS = 0.0f;    // time spent learning this flight
+  bool        m_airborne = false;      // latched at lift-off throttle, cleared near idle or on disarm
+  float       m_servoPitchFf = 0.0f;   // servo pitch command preset for this flight, frozen at arming
   char        m_eventText[96] = {};
   const char* m_event = "boot";
   uint32_t    m_eventCount = 0;

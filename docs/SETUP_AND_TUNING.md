@@ -126,6 +126,14 @@ axis.
 A healthy setup hovers somewhere between 40 % and 60 % throttle. If it needs 80 % or more, there isn't enough
 spare thrust for the controller to correct with. Make the model lighter, or fit bigger props or stronger motors.
 
+Take off decisively. Until the throttle reaches `LIFTOFF_THROTTLE` (35 % by default) the firmware treats the
+model as still on the ground: the I terms, heading hold and roll on the motors stay off, so nothing builds up
+against the ground. Set it a little below the throttle where your model actually leaves the ground.
+
+Before blaming the gains for a forward/back swing, check the pitch mechanics. The battery should hang low,
+below the motor axis, the model should hang level when lifted by the motor shafts, and the motors should be
+upright at servo centre. Pitch is the weak axis of any bicopter, and these three things matter more than tuning.
+
 ## 7. Tuning
 
 The gains can be changed from the console without re-flashing. Changes only work while disarmed, take effect
@@ -134,14 +142,23 @@ straight away, and survive a reboot once you type `save`.
 ```
 pid                         show the current gains
 pid r 0.0016 0.003 0.00004  roll rate P, I, D
-pid p 0.0025 0.004 0        pitch rate P, I, D
+pid p 0.0030 0.0015 0       pitch rate P, I, D
 pid y 0.0025 0.003 0        yaw rate P, I, D
 ang r 3.0                   roll self-level strength
-ang p 3.0                   pitch self-level strength
+ang p 2.5                   pitch self-level strength
 ang y 1.5                   heading hold strength (0 switches it off)
 save                        keep them
-defaults                    back to the values in Config.hpp
+defaults                    back to the values in Config.hpp (also clears level and trims)
+lead 0.02                   servo lead in seconds, 0 = off (until reboot)
 ```
+
+The web tuning page (WiFi `BiCopter`, http://192.168.4.1) changes the same gains from a phone and has a
+flight recorder that saves a `.csv`.
+
+The pitch values above are a deliberately simple starting point, the same kind of plain PID that MG996R
+bicopters fly well with: modest P, small I, no D. The extra pitch features in `Config.hpp` (servo lead, slew
+limiter, square-root angle controller, throttle gain scaling) are switched off. Turn them on one at a time only
+once the plain controller flies.
 
 Work on one axis at a time, roll first, then pitch, then yaw:
 
@@ -166,6 +183,7 @@ commands sent to the mixer, the yaw I term (`yI`), all four outputs and the diff
 | slow rocking left/right | roll self-level (`ang r`) down, roll I up |
 | nose bobbing, servos buzzing | pitch P down; check the linkage for free play |
 | nose creeps forward or back | redo the level calibration, then pitch I up |
+| slow forward/back swing, about once a second | pitch self-level (`ang p`) down, then pitch I down; check the CG height |
 | slow turn | servo trims first, then yaw I up; check the props spin in opposite directions |
 | yaw twitching | yaw P down |
 
@@ -194,6 +212,14 @@ stand that stops the model turning, some build-up is normal.
 can't overcome. Do the twist test from step 4. If the servos resist correctly, the cause is mechanical:
 motors not upright, mismatched props, or one motor working much harder because the weight is off-centre.
 
+**The model shoots forward the moment it takes off.** On the ground the frame can't move, so an I term that
+runs there keeps adding correction and tilts the servos 20-25° before lift-off. The lift-off detection now
+keeps the I terms off until `LIFTOFF_THROTTLE`. If it still happens, that value is set too low.
+
+**It swings forward and back and needs a lot of room.** That is the pitch axis: slow servos, a short lever
+between rotors and centre of gravity, and a CG behind the motors. Hang the battery low, balance front to back,
+remove linkage play, then use the simple pitch gains above.
+
 **FAULT on the status line.** The sensor stopped answering. Check the four IMU wires, then reboot.
 
 ## Console commands
@@ -204,5 +230,6 @@ i / r / o / f    IMU / radio / outputs / log  l           save the current attit
 x                stop all output              trim l|r N  servo trim in µs
 pid, pid a P I D show / set rate gains        ang a P     self-level or heading-hold gain
 save             store trims, level, gains    defaults    back to Config.hpp values
+lead S           servo lead (until reboot)    hover reset forget the learned hover tilt
 reboot
 ```

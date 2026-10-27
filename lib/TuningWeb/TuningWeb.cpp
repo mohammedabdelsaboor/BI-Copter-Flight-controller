@@ -336,7 +336,8 @@ void TuningWeb::handleState()
            "{\"state\":\"%s\",\"armBlock\":\"%s\",\"event\":\"%s\",\"eventCount\":%lu,\"loopHz\":%lu,"
            "\"armed\":%s,\"accelUsed\":%s,\"unsaved\":%s,"
            "\"roll\":%.2f,\"pitch\":%.2f,\"rawRoll\":%.2f,\"rawPitch\":%.2f,\"gyro\":[%.1f,%.1f,%.1f],"
-           "\"throttle\":%.2f,\"hoverTilt\":%.1f,\"hoverTrim\":%.1f,\"servoUs\":[%u,%u],\"escUs\":[%u,%u],\"tiltDeg\":[%.1f,%.1f],"
+           "\"throttle\":%.2f,\"hoverTilt\":%.1f,\"hoverTrim\":%.1f,\"servoUs\":[%u,%u],\"escUs\":[%u,%u],\"tiltDeg\":["
+           "%.1f,%.1f],"
            "\"level\":[%.2f,%.2f],\"trimUs\":[%d,%d],\"trimDeg\":[%.1f,%.1f],\"usPerDeg\":%.2f,"
            "\"rateP\":[%.5f,%.5f,%.5f],\"rateI\":[%.5f,%.5f,%.5f],\"rateD\":[%.5f,%.5f,%.5f],"
            "\"angleP\":[%.2f,%.2f,%.2f]}",
@@ -344,10 +345,10 @@ void TuningWeb::handleState()
            static_cast<unsigned long>(snap.loopHz), snap.armed ? "true" : "false", snap.accelUsed ? "true" : "false",
            snap.unsaved ? "true" : "false", snap.rollDeg, snap.pitchDeg, snap.rollDeg + snap.level[0],
            snap.pitchDeg + snap.level[1], snap.gyroDps[0], snap.gyroDps[1], snap.gyroDps[2], snap.throttle,
-           snap.hoverTiltDeg, snap.hoverTrimDeg, snap.servoUs[0], snap.servoUs[1], snap.escUs[0], snap.escUs[1], tiltDeg[0], tiltDeg[1], snap.level[0],
-           snap.level[1], snap.trimUs[0], snap.trimUs[1], trimDeg[0], trimDeg[1], m_config.servoUsPerDeg, g.rateP[0],
-           g.rateP[1], g.rateP[2], g.rateI[0], g.rateI[1], g.rateI[2], g.rateD[0], g.rateD[1], g.rateD[2], g.angleP[0],
-           g.angleP[1], g.angleP[2]);
+           snap.hoverTiltDeg, snap.hoverTrimDeg, snap.servoUs[0], snap.servoUs[1], snap.escUs[0], snap.escUs[1],
+           tiltDeg[0], tiltDeg[1], snap.level[0], snap.level[1], snap.trimUs[0], snap.trimUs[1], trimDeg[0], trimDeg[1],
+           m_config.servoUsPerDeg, g.rateP[0], g.rateP[1], g.rateP[2], g.rateI[0], g.rateI[1], g.rateI[2], g.rateD[0],
+           g.rateD[1], g.rateD[2], g.angleP[0], g.angleP[1], g.angleP[2]);
   m_server->sendHeader("Cache-Control", "no-store");
   m_server->send(200, "application/json", json);
 }

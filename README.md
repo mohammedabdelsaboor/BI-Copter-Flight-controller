@@ -12,8 +12,14 @@ with, rather than a general purpose autopilot. Everything that matters for flyin
 lines of C++ that you can read in an afternoon.
 
 The full write-up (how a bicopter flies, the firmware design, the setup procedure and the references) is in
-[docs/BiCopter_Project_Guide.pdf](docs/BiCopter_Project_Guide.pdf). A short test flight is in
-[docs/media/test_flight.mp4](docs/media/test_flight.mp4).
+[docs/BiCopter_Project_Guide.pdf](docs/BiCopter_Project_Guide.pdf).
+
+## Test flight
+
+Hand-held test with the motors running: the servos tilt the motors to hold the frame level as it is moved.
+Click the clip for the full 40-second video.
+
+[![Hand-held test flight: the servos tilt the motors to keep the frame level](docs/media/test_flight.gif)](docs/media/test_flight.mp4)
 
 ## Hardware
 
@@ -50,7 +56,9 @@ bi_copter_firmware/
 │   ├── Mpu6050/              sensor driver, gyro calibration, axis remapping
 │   ├── RcPwmInput/           measures the 4 receiver pulses with the MCPWM capture hardware
 │   ├── StickInput/           turns pulses into stick values, failsafe, arm/disarm gestures
-│   ├── AttitudeEstimator/    roll and pitch from gyro + accelerometer
+│   ├── AttitudeEstimator/    roll and pitch: Mahony filter fusing gyro + accelerometer
+│   ├── BiquadFilter/         second order low pass (accelerometer vibration)
+│   ├── LeadCompensator/      optional phase lead for the servo commands
 │   ├── Pt1Filter/            low pass filter
 │   ├── Pid/                  rate PID controller
 │   ├── PwmOutput/            servo/ESC pulses on the LEDC peripheral
@@ -63,7 +71,7 @@ bi_copter_firmware/
 │   ├── flight_log.py         records the console to a file during a test
 │   └── make_guide.py         rebuilds the PDF guide
 └── docs/
-    ├── media/                photo of the model and a test flight video
+    ├── media/                photo of the model, test flight video and a short GIF of it
     ├── BiCopter_Project_Guide.pdf
     ├── WIRING.md
     └── SETUP_AND_TUNING.md

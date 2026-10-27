@@ -62,30 +62,30 @@ private:
   {
     Action      action;
     StoredGains gains;
-    float       level[2];  // roll, pitch, deg
+    float       level[2];   // roll, pitch, deg
     int16_t     trimUs[2];  // left, right
   };
 
   struct Snapshot
   {
-    char     state[12];
-    char     armBlock[72];
-    char     event[96];
-    uint32_t eventCount;
-    uint32_t loopHz;
-    bool     armed;
-    bool     accelUsed;
-    bool     unsaved;
-    float    rollDeg;  // level corrected, what the controller holds
-    float    pitchDeg;
-    float    gyroDps[3];
-    float    throttle;
-    float    hoverTiltDeg;  // learned motor tilt in hover, + = forward
-    float    hoverTrimDeg;  // body pitch offset applied for it
-    uint16_t servoUs[2];
-    uint16_t escUs[2];
-    float    level[2];
-    int16_t  trimUs[2];
+    char        state[12];
+    char        armBlock[72];
+    char        event[96];
+    uint32_t    eventCount;
+    uint32_t    loopHz;
+    bool        armed;
+    bool        accelUsed;
+    bool        unsaved;
+    float       rollDeg;  // level corrected, what the controller holds
+    float       pitchDeg;
+    float       gyroDps[3];
+    float       throttle;
+    float       hoverTiltDeg;  // learned motor tilt in hover, + = forward
+    float       hoverTrimDeg;  // body pitch offset applied for it
+    uint16_t    servoUs[2];
+    uint16_t    escUs[2];
+    float       level[2];
+    int16_t     trimUs[2];
     StoredGains gains;
   };
 
@@ -133,10 +133,10 @@ private:
   WebServer*        m_server = nullptr;
 
   portMUX_TYPE      m_lock = portMUX_INITIALIZER_UNLOCKED;
-  Snapshot          m_snapshot = {};  // guarded by m_lock
-  Request           m_request = {};   // guarded by m_lock
-  volatile uint32_t m_requestId = 0;  // web task increments when it queues a request
-  volatile uint32_t m_doneId = 0;     // control loop sets it to m_requestId when applied
+  Snapshot          m_snapshot = {};   // guarded by m_lock
+  Request           m_request = {};    // guarded by m_lock
+  volatile uint32_t m_requestId = 0;   // web task increments when it queues a request
+  volatile uint32_t m_doneId = 0;      // control loop sets it to m_requestId when applied
   char              m_reply[96] = {};  // written by the control loop before m_doneId
   bool              m_running = false;
   bool              m_unsaved = false;

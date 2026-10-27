@@ -154,6 +154,18 @@ void SerialConsole::handleCommand(char* line)
       printGains();
     }
   }
+  else if (sscanf(line, "lead %f", &p) == 1)
+  {
+    if ((p < 0.0f) || (p > 0.08f))
+    {
+      printLine("usage: lead S   servo lead in seconds, 0 = off, e.g. lead 0.02 (max 0.08)");
+    }
+    else
+    {
+      m_flight.setServoLead(p);
+      printf("servo lead %.3f s (until reboot; put it in SERVO_LEAD_S to keep it)", p);
+    }
+  }
   else if (sscanf(line, "ang %c %f", &side, &p) == 2)
   {
     const int axis = axisIndex(side);
@@ -204,6 +216,7 @@ void SerialConsole::printHelp()
   printLine(" pid         show gains");
   printLine(" pid r|p|y P I D   set rate gains, e.g. pid y 0.0025 0.003 0 [disarmed]");
   printLine(" ang r|p|y P self-level (r,p) / heading-hold (y) gain       [disarmed]");
+  printLine(" lead S      servo lead in seconds, 0 = off (until reboot)    [disarmed]");
   printLine(" save        write trims + gains to flash          [disarmed]");
   printLine(" defaults    level, trims, gains back to Config.hpp [disarmed]");
   printLine(" reboot");
@@ -258,10 +271,10 @@ void SerialConsole::printStream()
     case Stream::IMU:
     {
       const float g = sqrtf(t.accelG[0] * t.accelG[0] + t.accelG[1] * t.accelG[1] + t.accelG[2] * t.accelG[2]);
-      printf("roll %+6.1f pitch %+6.1f | gyro r %+6.1f p %+6.1f y %+6.1f dps | acc %+5.2f %+5.2f %+5.2f = %4.2f g %s | "
-             "id 0x%02X zoff %+.2f",
+      printf("roll %+6.1f pitch %+6.1f | gyro r %+6.1f p %+6.1f y %+6.1f dps | acc %+5.2f %+5.2f %+5.2f = %4.2f g "
+             "trust %3.0f%% | gyro err r %+.2f p %+.2f | id 0x%02X zoff %+.2f",
              t.rollDeg, t.pitchDeg, t.gyroDps[0], t.gyroDps[1], t.gyroDps[2], t.accelG[0], t.accelG[1], t.accelG[2], g,
-             t.accelUsed ? "used" : "IGNORED", t.imuId, m_flight.accelZOffsetG());
+             100.0f * t.accelTrust, t.attBiasDps[0], t.attBiasDps[1], t.imuId, m_flight.accelZOffsetG());
     }
     break;
 
@@ -289,10 +302,11 @@ void SerialConsole::printStream()
     {
       const MixerOutputs& o = m_mixer.outputs();
       printf("%s thr %.2f | R %+5.1f P %+5.1f | rate r %+6.1f/%+6.1f p %+6.1f/%+6.1f y %+6.1f/%+6.1f | cmd %+5.2f "
-             "%+5.2f %+5.2f yI %+5.2f pI %+5.2f | ESC %4u %4u | srv %4u %4u diff %+4d | zdrift %+.2f | hover tilt %+.1f",
+             "%+5.2f %+5.2f yI %+5.2f pI %+5.2f pMod %.2f | ESC %4u %4u | srv %4u %4u diff %+4d | zdrift %+.2f | hover "
+             "tilt %+.1f",
              FlightController::stateName(t.state), t.throttle, t.rollDeg, t.pitchDeg, t.gyroDps[0], t.rateSetDps[0],
              t.gyroDps[1], t.rateSetDps[1], t.gyroDps[2], t.rateSetDps[2], t.command[0], t.command[1], t.command[2],
-             t.yawI, t.pitchI, o.escLeftUs, o.escRightUs, o.servoLeftUs, o.servoRightUs,
+             t.yawI, t.pitchI, t.pitchSlewMod, o.escLeftUs, o.escRightUs, o.servoLeftUs, o.servoRightUs,
              static_cast<int>(o.servoLeftUs) + static_cast<int>(o.servoRightUs) - 3000, t.yawGyroDriftDps,
              t.hoverMotorTiltDeg);
       break;

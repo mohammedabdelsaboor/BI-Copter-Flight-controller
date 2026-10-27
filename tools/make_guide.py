@@ -378,12 +378,15 @@ def section_firmware():
                            "timing does not depend on interrupt delays. A median of three pulses removes glitches."],
             ["StickInput", "Converts pulses to stick values, learns where each stick rests, detects the receiver "
                            "failsafe and recognises the arm, disarm and level gestures."],
-            ["AttitudeEstimator", "Estimates roll and pitch with a complementary filter: the gyro for fast changes, "
-                                  "the accelerometer to remove slow drift."],
-            ["Pid / Pt1Filter", "The rate controller and the low pass filters used on the gyro, the D term and the "
-                                "servo commands."],
+            ["AttitudeEstimator", "Estimates roll and pitch with a Mahony filter: the gyro for fast changes, the "
+                                  "accelerometer to remove slow drift, and an integral term that learns the gyro's "
+                                  "zero error in flight."],
+            ["Pid / Pt1Filter / BiquadFilter", "The rate controller and the low pass filters used on the gyro, the "
+                                               "accelerometer, the D term and the servo commands."],
+            ["LeadCompensator", "Optional phase lead for the servo commands, so a slow servo starts moving sooner. "
+                                "Off by default."],
             ["BiCopterMixer / PwmOutput", "Turn the corrections into four pulse widths and generate them on the LEDC "
-                                          "peripheral: 400 Hz for the ESCs, 50 Hz for the servos."],
+                                          "peripheral: 400 Hz for the ESCs, 100 Hz for the servos."],
             ["FlightController", "The state machine (disarmed, armed, failsafe, fault), the safety checks and the "
                                  "control law."],
             ["Settings / SerialConsole", "Keep trims, level and tuned gains in flash, and provide the USB console."],
@@ -401,19 +404,33 @@ def section_firmware():
         p("Figure 3. Cascaded control on one axis.", "caption"),
         p("Attitude estimate", "h2"),
         p("The gyro measures rotation rate very accurately but slowly drifts. The accelerometer knows where down "
-          "is, but every vibration and manoeuvre disturbs it. The complementary filter integrates the gyro and "
-          "pulls the result gently towards the accelerometer angle:"),
+          "is, but every vibration and manoeuvre disturbs it, and on a bicopter it mostly sees the direction of "
+          "the motor thrust, which moves with every servo correction. It can only be trusted slowly."),
+        p("The firmware uses a Mahony filter on a quaternion. The gyro is integrated as the main source. The "
+          "accelerometer, after a 10 Hz second order low pass, steers the estimate slowly towards \"down\" "
+          "(a 3 s time constant). An integral term learns the gyro's zero error in flight, so the slow correction "
+          "does not leave a steady angle error behind:"),
         code("""
-angle = angle + gyro_rate * dt                       (fast, but drifts)
-angle = angle + k * (accel_angle - angle)            k = dt / (0.8 s + dt)
+error   = measured_down x estimated_down               (cross product)
+bias   += ki * trust * error * dt                       (learns the gyro zero error)
+rate    = gyro + kp * trust * error + bias              kp = 1 / 3 s, ki = kp / 15 s
+q      += 0.5 * q * (0, rate) * dt                      (then normalise)
 """),
-        p("The correction is skipped whenever the total acceleration is far from 1 g, because the "
-          "accelerometer is then measuring the model's motion as well as gravity."),
+        p("How much the accelerometer is trusted fades smoothly from full at exactly 1 g to nothing at 0.8 g or "
+          "1.2 g, because outside that range it is measuring the model's motion as well as gravity. In a "
+          "simulated hover with a 0.5 deg/s gyro error and prop vibration, this cut the angle error from about "
+          "1.5 deg to 0.1 deg compared with the simple complementary filter used before."),
         p("Filters", "h2"),
-        p("The sensor's own low pass filter is set to 44 Hz. On top of that, the gyro signal for pitch and yaw is "
-          "filtered at 25 Hz and the servo commands at 10 Hz. The servos cannot follow anything faster, and "
-          "feeding them vibration only makes them buzz inside their gear play. Roll keeps an 80 Hz filter because "
-          "the motors can use the extra speed."),
+        p("The sensor's own low pass filter is set to 44 Hz. On top of that, the gyro signal is filtered at 80 Hz "
+          "for roll, 40 Hz for pitch and 25 Hz for yaw, and the servo commands at 30 Hz. The servos are updated at "
+          "100 Hz. Every filter adds a little delay, so the servo axes use the lightest filtering that still keeps "
+          "vibration from making the servos buzz inside their gear play."),
+        p("Take-off detection", "h2"),
+        p("Sitting on the ground with the motors spooling, the frame cannot respond to corrections. An I term "
+          "running there keeps adding correction against the ground, and in testing it tilted the servos 20-25 deg "
+          "before lift-off, so the model shot forward as it left the ground. The I terms, heading hold and roll on "
+          "the motors therefore only switch on once the throttle reaches the lift-off throttle, and switch off again "
+          "only near idle."),
         Spacer(1, 10),
     ]
 
@@ -561,6 +578,11 @@ def section_console():
              "Calibration now retries on its own until the model is still."],
             ["Upload failed every first time", "The USB port reconnects when the chip enters its bootloader.",
              "1200-baud reset in platformio.ini."],
+            ["Shot forward at take-off", "The pitch I term wound up against the ground before lift-off.",
+             "Take-off detection: I terms only switch on at the lift-off throttle."],
+            ["Forward/back swing, needs a lot of room", "Slow servos on the pitch axis, and extra controller "
+                                                         "layers that made fast servo starts worse.",
+             "Simple pitch PID, CG low under the rotors, front-to-back balance."],
         ], [42, 66, 62]),
         PageBreak(),
     ]

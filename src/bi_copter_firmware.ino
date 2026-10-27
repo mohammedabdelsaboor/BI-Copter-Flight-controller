@@ -62,11 +62,11 @@ static MixerConfig mixerConfig()
 
 static StickConfig stickConfig()
 {
-  return {cfg::RC_CH_ROLL,         cfg::RC_CH_PITCH,        cfg::RC_CH_THROTTLE,          cfg::RC_CH_YAW,
-          cfg::RC_REVERSE_ROLL,    cfg::RC_REVERSE_PITCH,   cfg::RC_REVERSE_YAW,          cfg::RC_STICK_MIN_US,
-          cfg::RC_STICK_MAX_US,    cfg::RC_DEADBAND_US,     cfg::RC_YAW_DEADBAND_US,      cfg::RC_LEARN_CENTRES,
-          cfg::RC_THROTTLE_LOW_US, cfg::RC_THROTTLE_MAX_US, cfg::RC_FAILSAFE_THROTTLE_US, cfg::RC_YAW_ARM_US,
-          cfg::RC_YAW_DISARM_US,   cfg::RC_PITCH_GESTURE_US,   cfg::RC_LEARN_YAW_CENTRE};
+  return {cfg::RC_CH_ROLL,         cfg::RC_CH_PITCH,         cfg::RC_CH_THROTTLE,          cfg::RC_CH_YAW,
+          cfg::RC_REVERSE_ROLL,    cfg::RC_REVERSE_PITCH,    cfg::RC_REVERSE_YAW,          cfg::RC_STICK_MIN_US,
+          cfg::RC_STICK_MAX_US,    cfg::RC_DEADBAND_US,      cfg::RC_YAW_DEADBAND_US,      cfg::RC_LEARN_CENTRES,
+          cfg::RC_THROTTLE_LOW_US, cfg::RC_THROTTLE_MAX_US,  cfg::RC_FAILSAFE_THROTTLE_US, cfg::RC_YAW_ARM_US,
+          cfg::RC_YAW_DISARM_US,   cfg::RC_PITCH_GESTURE_US, cfg::RC_LEARN_YAW_CENTRE};
 }
 
 static FlightConfig flightConfig()
@@ -79,6 +79,8 @@ static FlightConfig flightConfig()
           cfg::HEADING_HOLD_P,
           cfg::MAX_RATE_ROLL_DPS,
           cfg::MAX_RATE_PITCH_DPS,
+          cfg::ANGLE_ACCEL_MAX_ROLL,
+          cfg::ANGLE_ACCEL_MAX_PITCH,
           cfg::PID_ROLL,
           cfg::PID_PITCH,
           cfg::PID_YAW,
@@ -96,13 +98,18 @@ static FlightConfig flightConfig()
           {cfg::GYRO_LPF_ROLL_HZ, cfg::GYRO_LPF_PITCH_HZ, cfg::GYRO_LPF_YAW_HZ},
           cfg::SERVO_CMD_LPF_HZ,
           cfg::HOVER_TRIM_ENABLED,
+          cfg::SERVO_HOVER_FF_ENABLED,
           cfg::HOVER_TRIM_TAU_S,
           cfg::HOVER_TRIM_MAX_DEG,
           cfg::HOVER_TRIM_MIN_THROTTLE,
           static_cast<float>(cfg::SERVO_TRAVEL_US) / cfg::SERVO_US_PER_DEG,
           cfg::HOVER_THROTTLE,
           cfg::SERVO_GAIN_MIN,
-          cfg::SERVO_GAIN_MAX};
+          cfg::SERVO_GAIN_MAX,
+          cfg::LIFTOFF_THROTTLE,
+          cfg::SERVO_LEAD_S,
+          cfg::SERVO_LEAD_FILTER_HZ,
+          cfg::SERVO_LEAD_MAX};
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -221,7 +228,9 @@ void setup()
   }
 
   // 6. Flight controller
-  attitude.configure({cfg::ATTITUDE_ACCEL_TAU_S, cfg::ATTITUDE_ACCEL_MIN_G, cfg::ATTITUDE_ACCEL_MAX_G});
+  attitude.configure({cfg::ATTITUDE_ACCEL_TAU_S, cfg::ATTITUDE_ACCEL_MIN_G, cfg::ATTITUDE_ACCEL_MAX_G,
+                      cfg::ATTITUDE_BIAS_TAU_S, cfg::ATTITUDE_BIAS_LIMIT_DPS, cfg::ATTITUDE_ACCEL_LPF_HZ,
+                      static_cast<float>(cfg::LOOP_HZ)});
   flight.configure(flightConfig());
   if (settings.gains().valid)
   {
@@ -233,9 +242,9 @@ void setup()
   // 7. Web tuning page (WiFi access point)
   if (cfg::WEB_TUNING_ENABLED)
   {
-    const TuningWebConfig webConfig = {cfg::WIFI_AP_SSID,          cfg::WIFI_AP_PASSWORD,    cfg::WIFI_AP_CHANNEL,
-                                       cfg::WIFI_TX_POWER_QDBM,    cfg::SERVO_CENTER_US,     cfg::SERVO_US_PER_DEG,
-                                       cfg::SERVO_LEFT_REVERSED,   cfg::SERVO_RIGHT_REVERSED};
+    const TuningWebConfig webConfig = {cfg::WIFI_AP_SSID,        cfg::WIFI_AP_PASSWORD,    cfg::WIFI_AP_CHANNEL,
+                                       cfg::WIFI_TX_POWER_QDBM,  cfg::SERVO_CENTER_US,     cfg::SERVO_US_PER_DEG,
+                                       cfg::SERVO_LEFT_REVERSED, cfg::SERVO_RIGHT_REVERSED};
     if (web.begin(webConfig))
     {
       char text[80];

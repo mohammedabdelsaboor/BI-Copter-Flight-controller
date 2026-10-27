@@ -61,7 +61,7 @@ private:
   static constexpr const char* KEY = "settings";
   static constexpr uint32_t    VERSION = 1;  // bump when StoredSettings changes
   static constexpr const char* GAINS_KEY = "gains";
-  static constexpr uint32_t    GAINS_VERSION = 2;  // bump when StoredGains changes
+  static constexpr uint32_t    GAINS_VERSION = 2;        // bump when StoredGains changes
   static constexpr const char* HOVER_KEY = "hoverTilt";  // own key, so older saves keep level/trims/gains
 
   struct Blob
