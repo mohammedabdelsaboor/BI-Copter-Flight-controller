@@ -89,9 +89,9 @@ $$
 
 with $k_p = 1/3\ \text{s}^{-1}$ and $k_i = k_p / 15\ \text{s}$. The weight $w$ falls linearly from 1 at
 exactly 1 g to 0 at 0.8 g and 1.2 g, so the accelerometer is ignored while the model is accelerating. The
-integral term $\mathbf{b}$ learns the gyro's zero error during flight. In simulation, with a 0.5 °/s gyro error
+integral term $\mathbf{b}$ learns the gyro's zero error during flight. In simulation, with gyro errors of 0.4–0.6 °/s
 and propeller vibration, this reduced the attitude error from about 1.5° (the complementary filter used
-earlier) to about 0.1°.
+earlier) to about 0.1° (Figure 2 in section 5).
 
 ### 3.3 Cascaded attitude control
 
@@ -148,11 +148,15 @@ bi_copter_firmware/
 ├── CITATION.cff                citation metadata
 ├── tools/
 │   ├── flight_log.py           records the console stream during a test
-│   └── make_guide.py           generates the PDF guide
+│   ├── make_figures.py         builds the result figures from data and simulation
+│   ├── make_guide.py           generates the PDF guide
+│   └── sim/attitude_sim.cpp    attitude filter simulation using the firmware code
 └── docs/
     ├── BiCopter_Project_Guide.pdf
     ├── WIRING.md               Appendix A: wiring
     ├── SETUP_AND_TUNING.md     Appendix B: setup and tuning
+    ├── figures/                result figures (Figures 1-3)
+    ├── data/                   flight log used for Figure 1
     └── media/                  photograph and test flight video
 ```
 
@@ -174,22 +178,50 @@ The logged tests produced the following observations, in the order in which they
 it was rejected permanently and the attitude drifted. The 0.43 g offset on the Z axis is now measured at every
 start-up and removed.
 
-**Roll.** The differential-thrust axis was stable from the first tuned flight. The motors react within tens of
-milliseconds and act on a long lever, so modest gains are enough.
+**Roll and pitch.** Figure 1 shows 20 seconds of a logged throttle sweep with an earlier version of the
+controller. The difference between the two axes is the central result of this project. Roll, driven by the
+motors, stays within ±6° of level (standard deviation 1.4°). Pitch, driven by the servos, swings by up to
+±25° in slow excursions lasting several seconds with faster wobbles on top (standard deviation 12°), and the
+pitch command spends a third of the window above 70 % of full tilt.
 
-**Pitch.** The servo axis swung forward and back by ±11–17° at about 2 Hz, and the pitch command was saturated
-for a third of the time. Two causes were identified. The first was mechanical: the centre of gravity sat behind
-the rotor axis, so the servos had to hold the rotors 10–25° forward just to stay level, leaving little travel
-for corrections. The second was a controller effect: with the model still on the ground the pitch integrator
-built up to two thirds of full command before lift-off, so the model shot forward as it left the ground. The
-lift-off logic in section 3.4 removed the second cause.
+![Figure 1. Measured roll and pitch angle and pitch servo command during a logged throttle sweep](docs/figures/fig1_roll_vs_pitch.png)
 
-**Servo response.** An MG996R-like servo model reaches 90 % of a 5–10° step in about 120 ms. A phase lead of
-40 ms shortened that to about 75 ms in simulation. On the real model, combined with a higher pitch gain, it
-made the frame vibrate. A likely contributor is the reaction torque of the motor mounts when the servos start
+*Figure 1. Measured roll and pitch angle (top) and the pitch servo command (bottom), 20 s of a logged throttle
+sweep at 25 % throttle. Source data: [docs/data/](docs/data/).*
+
+Two causes of the pitch behaviour were identified. The first is mechanical: the centre of gravity sat behind
+the rotor axis, so the servos had to hold the rotors 10–25° forward just to stay level, which is visible in
+Figure 1 as a pitch command that stays positive for long periods and leaves little travel for corrections. The
+second was a controller effect: with the model still on the ground the pitch integrator built up to about two
+thirds of full command before lift-off, so the model shot forward as it left the ground. The lift-off logic in
+section 3.4 removed the second cause.
+
+**Attitude estimation.** Figure 2 compares the complementary filter used earlier with the Mahony filter now in
+the firmware, both running on the same simulated hover with a 0.4 °/s gyro offset, propeller vibration and the
+small accelerations caused by servo corrections. The simulation calls the firmware's own estimator code. The
+complementary filter settles with a constant error of about 1.5°, the gyro offset multiplied by its 3 s time
+constant. The Mahony filter learns the offset within about 30 s and its error then stays near zero
+(RMS 0.13° against 1.45°).
+
+![Figure 2. Simulated pitch estimation error of the complementary and Mahony filters](docs/figures/fig2_attitude_error.png)
+
+*Figure 2. Simulated pitch estimation error of the earlier complementary filter and the Mahony filter
+(firmware code), [tools/sim/attitude_sim.cpp](tools/sim/attitude_sim.cpp).*
+
+**Servo response.** In a simple MG996R-like servo model, a 10° command step reaches 90 % after about 110 ms.
+With the 40 ms phase lead in the firmware it does so after about 30 ms, at the cost of a small overshoot
+(Figure 3). On the real model, combined with a higher pitch gain, the lead made the frame vibrate. A likely contributor is the reaction torque of the motor mounts when the servos start
 to move quickly, which has also been described for other tilt-rotor designs. The lead is therefore switched
 off by default, and the pitch axis uses a plain PID with a small integral gain, the same kind of controller
 that other MG996R bicopters fly with.
+
+![Figure 3. Simulated servo step response with and without phase lead](docs/figures/fig3_servo_lead.png)
+
+*Figure 3. Simulated response of an MG996R-like servo to a 10° step, with and without the 40 ms phase lead.
+This is a model, not a measurement.*
+
+All three figures are generated by [tools/make_figures.py](tools/make_figures.py) from the recorded log and
+the simulations, so they can be rebuilt after new tests.
 
 ## 6. Discussion and limitations
 
