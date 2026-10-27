@@ -3,6 +3,10 @@
 The two printed parts used on the model. Both are existing designs from Thingiverse, included here unchanged
 with their original licence files so the airframe can be rebuilt. Credit belongs to their authors.
 
+![The two parts rendered from their STL files: (a) motor mount, two variants, (b) servo mount](../docs/figures/fig8_mechanism_parts.png)
+
+*Rendered from the STL files with [tools/render_parts.py](../tools/render_parts.py).*
+
 | Part | Used for | Files | Author and source | Licence |
 |---|---|---|---|---|
 | [Brushless motor mount](3d-parts/brushless-motor-mount/) | holds each motor on its tilt shaft | STL | protorobotics, [thing:4009542](https://www.thingiverse.com/thing:4009542) | CC BY-SA |

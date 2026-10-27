@@ -51,6 +51,11 @@ Pin assignment, power wiring and sensor mounting are documented in Appendix A,
 [docs/WIRING.md](docs/WIRING.md). The 3D-printed motor and servo mounts, existing Thingiverse designs credited to
 their authors, are in [hardware/](hardware/).
 
+![Figure 1. The 3D-printed tilt mechanism parts: motor mount and servo mount](docs/figures/fig8_mechanism_parts.png)
+
+*Figure 1. The 3D-printed tilt mechanism parts, rendered from their STL files: (a) motor mount (the file holds two
+variants), (b) servo mount. Each motor mount turns about the servo's output shaft.*
+
 ### 2.2 Coordinate frame
 
 The firmware uses a single body frame: X points to the nose, Y to the left rotor and Z up. Positive roll lowers
@@ -92,7 +97,7 @@ with $k_p = 1/3\ \text{s}^{-1}$ and $k_i = k_p / 15\ \text{s}$. The weight $w$ f
 exactly 1 g to 0 at 0.8 g and 1.2 g, so the accelerometer is ignored while the model is accelerating. The
 integral term $\mathbf{b}$ learns the gyro's zero error during flight. In simulation, with gyro errors of 0.4–0.6 °/s
 and propeller vibration, this reduced the attitude error from about 1.5° (the complementary filter used
-earlier) to about 0.1° (Figure 2 in section 5).
+earlier) to about 0.1° (Figure 3 in section 5).
 
 ### 3.3 Cascaded attitude control
 
@@ -151,6 +156,7 @@ bi_copter_firmware/
 ├── tools/
 │   ├── flight_log.py           records the console stream during a test
 │   ├── make_figures.py         builds the result figures from data and simulation
+│   ├── render_parts.py         renders the 3D-printed parts for the documents
 │   ├── make_guide.py           generates the PDF guide
 │   └── sim/attitude_sim.cpp    attitude filter simulation using the firmware code
 └── docs/
@@ -180,46 +186,46 @@ The logged tests produced the following observations, in the order in which they
 it was rejected permanently and the attitude drifted. The 0.43 g offset on the Z axis is now measured at every
 start-up and removed.
 
-**Roll and pitch.** Figure 1 shows 20 seconds of a logged throttle sweep with an earlier version of the
+**Roll and pitch.** Figure 2 shows 20 seconds of a logged throttle sweep with an earlier version of the
 controller. The difference between the two axes is the central result of this project. Roll, driven by the
 motors, stays within ±6° of level (standard deviation 1.4°). Pitch, driven by the servos, swings by up to
 ±25° in slow excursions lasting several seconds with faster wobbles on top (standard deviation 12°), and the
 pitch command spends a third of the window above 70 % of full tilt.
 
-![Figure 1. Measured roll and pitch angle and pitch servo command during a logged throttle sweep](docs/figures/fig1_roll_vs_pitch.png)
+![Figure 2. Measured roll and pitch angle and pitch servo command during a logged throttle sweep](docs/figures/fig1_roll_vs_pitch.png)
 
-*Figure 1. Measured roll and pitch angle (top) and the pitch servo command (bottom), 20 s of a logged throttle
+*Figure 2. Measured roll and pitch angle (top) and the pitch servo command (bottom), 20 s of a logged throttle
 sweep at 25 % throttle. Source data: [docs/data/](docs/data/).*
 
 Two causes of the pitch behaviour were identified. The first is mechanical: the centre of gravity sat behind
 the rotor axis, so the servos had to hold the rotors 10–25° forward just to stay level, which is visible in
-Figure 1 as a pitch command that stays positive for long periods and leaves little travel for corrections. The
+Figure 2 as a pitch command that stays positive for long periods and leaves little travel for corrections. The
 second was a controller effect: with the model still on the ground the pitch integrator built up to about two
 thirds of full command before lift-off, so the model shot forward as it left the ground. The lift-off logic in
 section 3.4 removed the second cause.
 
-**Attitude estimation.** Figure 2 compares the complementary filter used earlier with the Mahony filter now in
+**Attitude estimation.** Figure 3 compares the complementary filter used earlier with the Mahony filter now in
 the firmware, both running on the same simulated hover with a 0.4 °/s gyro offset, propeller vibration and the
 small accelerations caused by servo corrections. The simulation calls the firmware's own estimator code. The
 complementary filter settles with a constant error of about 1.5°, the gyro offset multiplied by its 3 s time
 constant. The Mahony filter learns the offset within about 30 s and its error then stays near zero
 (RMS 0.13° against 1.45°).
 
-![Figure 2. Simulated pitch estimation error of the complementary and Mahony filters](docs/figures/fig2_attitude_error.png)
+![Figure 3. Simulated pitch estimation error of the complementary and Mahony filters](docs/figures/fig2_attitude_error.png)
 
-*Figure 2. Simulated pitch estimation error of the earlier complementary filter and the Mahony filter
+*Figure 3. Simulated pitch estimation error of the earlier complementary filter and the Mahony filter
 (firmware code), [tools/sim/attitude_sim.cpp](tools/sim/attitude_sim.cpp).*
 
 **Servo response.** In a simple MG996R-like servo model, a 10° command step reaches 90 % after about 110 ms.
 With the 40 ms phase lead in the firmware it does so after about 30 ms, at the cost of a small overshoot
-(Figure 3). On the real model, combined with a higher pitch gain, the lead made the frame vibrate. A likely contributor is the reaction torque of the motor mounts when the servos start
+(Figure 4). On the real model, combined with a higher pitch gain, the lead made the frame vibrate. A likely contributor is the reaction torque of the motor mounts when the servos start
 to move quickly, which has also been described for other tilt-rotor designs. The lead is therefore switched
 off by default, and the pitch axis uses a plain PID with a small integral gain, the same kind of controller
 that other MG996R bicopters fly with.
 
-![Figure 3. Simulated servo step response with and without phase lead](docs/figures/fig3_servo_lead.png)
+![Figure 4. Simulated servo step response with and without phase lead](docs/figures/fig3_servo_lead.png)
 
-*Figure 3. Simulated response of an MG996R-like servo to a 10° step, with and without the 40 ms phase lead.
+*Figure 4. Simulated response of an MG996R-like servo to a 10° step, with and without the 40 ms phase lead.
 This is a model, not a measurement.*
 
 **Recorded flight.** The web page's flight recorder captured a 22-second flight on 23 October 2026, 20 s of it
@@ -236,18 +242,18 @@ target sat about 9° nose-up.
 | Mean ESC pulse, left minus right | +90 µs |
 | Motor tilt learned in hover | +9.3° forward |
 
-Figure 4 shows the core of the problem. On roll the measured rate follows the commanded rate closely. On pitch
+Figure 5 shows the core of the problem. On roll the measured rate follows the commanded rate closely. On pitch
 the commanded rate sits at its 90 °/s limit for almost two seconds while the model barely responds, and then
 the measured rate oscillates around the command. Over the whole flight the pitch axis tracks five times worse
-than roll (Figure 5).
+than roll (Figure 6).
 
-![Figure 4. Commanded and measured rate for roll and pitch during the recorded flight](docs/figures/fig5_rate_tracking.png)
+![Figure 5. Commanded and measured rate for roll and pitch during the recorded flight](docs/figures/fig5_rate_tracking.png)
 
-*Figure 4. Commanded and measured rate, roll (a) and pitch (b), for 5 s of the recorded flight.*
+*Figure 5. Commanded and measured rate, roll (a) and pitch (b), for 5 s of the recorded flight.*
 
-<img src="docs/figures/fig7_tracking_error.png" alt="Figure 5. RMS rate tracking error per axis" width="520">
+<img src="docs/figures/fig7_tracking_error.png" alt="Figure 6. RMS rate tracking error per axis" width="520">
 
-*Figure 5. RMS rate tracking error per axis over the airborne part of the recorded flight.*
+*Figure 6. RMS rate tracking error per axis over the airborne part of the recorded flight.*
 
 The PDF guide contains the full set of plots for this flight, including the attitude over time and all four
 actuator outputs.

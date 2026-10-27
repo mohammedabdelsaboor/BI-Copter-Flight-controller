@@ -356,6 +356,12 @@ right motor = throttle - roll          right servo = pitch + yaw
         ]),
         airframe_diagram(),
         p("Figure 1. The airframe. Roll is controlled by motor speed, pitch and yaw by servo tilt.", "caption"),
+        p("The tilt mechanism is built from two 3D-printed parts at each end of the arm, shown in Figure 2: a mount "
+          "that carries the motor and turns about the servo's output shaft, and a holder that fixes the MG996R "
+          "servo to the arm. Both are existing Thingiverse designs, credited in hardware/README.md."),
+        figure("fig8_mechanism_parts.png",
+               "Figure 2. The 3D-printed tilt mechanism parts, rendered from their STL files: (a) motor mount "
+               "(the file contains two variants), (b) servo mount."),
         p("Axes and signs", "h2"),
         p("The whole firmware uses one body frame: X points to the nose, Y to the left motor and Z up. Positive "
           "roll means the right side goes down, positive pitch means the nose goes down, and positive yaw means "
@@ -379,7 +385,7 @@ def section_firmware():
           "each takes a small settings struct, which the sketch fills in from <font face='%s'>Config.hpp</font>. "
           "That makes every part reusable and testable on its own." % (F["mono"], F["mono"])),
         dataflow_diagram(),
-        p("Figure 2. Data flow in one pass of the control loop.", "caption"),
+        p("Figure 3. Data flow in one pass of the control loop.", "caption"),
         table([
             ["Library", "What it does"],
             ["Mpu6050", "Reads gyro, accelerometer and temperature in one 14-byte burst. Calibrates the gyro at "
@@ -411,7 +417,7 @@ def section_firmware():
           "drives the actuators. The inner loop does most of the work against disturbances; the outer loop only "
           "has to decide where level is."),
         cascade_diagram(),
-        p("Figure 3. Cascaded control on one axis.", "caption"),
+        p("Figure 4. Cascaded control on one axis.", "caption"),
         p("Attitude estimate", "h2"),
         p("The gyro measures rotation rate very accurately but slowly drifts. The accelerometer knows where down "
           "is, but every vibration and manoeuvre disturbs it, and on a bicopter it mostly sees the direction of "
@@ -567,26 +573,26 @@ def section_console():
         Spacer(1, 6),
         p("Every setting that changes the model's behaviour only works while disarmed."),
         p("7. Test results", "h1"),
-        p("Figure 4 shows 20 seconds of a logged throttle sweep with an earlier version of the controller, and it "
+        p("Figure 5 shows 20 seconds of a logged throttle sweep with an earlier version of the controller, and it "
           "contains the central result of the project. Roll, driven by the motors, stays within 6 deg of level. "
           "Pitch, driven by the servos, swings by up to 25 deg, and its command stays positive for long periods "
           "because the centre of gravity sat behind the rotors and the servos had to hold them tilted forward."),
         figure("fig1_roll_vs_pitch.png",
-               "Figure 4. Measured roll and pitch angle and the pitch servo command during a throttle sweep."),
-        p("Figure 5 compares the complementary filter used earlier with the Mahony filter now in the firmware, on "
+               "Figure 5. Measured roll and pitch angle and the pitch servo command during a throttle sweep."),
+        p("Figure 6 compares the complementary filter used earlier with the Mahony filter now in the firmware, on "
           "the same simulated hover. The simulation calls the firmware's own estimator. The complementary filter "
           "keeps an error of about 1.5 deg caused by the gyro offset; the Mahony filter learns the offset within "
           "about 30 s and then stays near zero."),
         figure("fig2_attitude_error.png",
-               "Figure 5. Simulated pitch estimation error, complementary filter and Mahony filter."),
-        p("Figure 6 shows the effect of the optional phase lead on a simple servo model: 90 % of a 10 deg step is "
+               "Figure 6. Simulated pitch estimation error, complementary filter and Mahony filter."),
+        p("Figure 7 shows the effect of the optional phase lead on a simple servo model: 90 % of a 10 deg step is "
           "reached after about 30 ms instead of 110 ms. On the real model the lead, together with a higher pitch "
           "gain, made the frame vibrate, so it is off by default."),
         figure("fig3_servo_lead.png",
-               "Figure 6. Simulated servo step response with and without the 40 ms phase lead (a model, not a "
+               "Figure 7. Simulated servo step response with and without the 40 ms phase lead (a model, not a "
                "measurement)."),
         p("Recorded flight of 23 October 2026", "h2"),
-        p("Figures 7 to 10 come from a flight recorded with the web page's flight recorder: 22 s at 25 samples per "
+        p("Figures 8 to 11 come from a flight recorded with the web page's flight recorder: 22 s at 25 samples per "
           "second, of which 20 s airborne at 63 % throttle. The full record is included as "
           "docs/data/bicopter_20261023_182347.csv. It was flown with an earlier firmware version in which the hover "
           "trim was active, so the pitch target was about 9 deg nose-up rather than level. Table 1 summarises the "
@@ -602,27 +608,27 @@ def section_console():
             ["Samples in which the accelerometer was trusted", "44 %"],
         ], [110, 55]),
         p("Table 1. Statistics of the recorded flight.", "caption"),
-        p("Figure 7 shows the attitude over the whole flight. Roll stays within a few degrees of level apart from "
+        p("Figure 8 shows the attitude over the whole flight. Roll stays within a few degrees of level apart from "
           "short excursions, while pitch repeatedly drops 40 to 55 deg nose-up and recovers, roughly every 2.5 s."),
         figure("fig4_flight_attitude.png",
-               "Figure 7. Roll angle (a) and pitch angle with its hover-trim target (b) during the recorded flight."),
-        p("Figure 8 compares the rate each axis was asked for with the rate the gyro measured, on the same scale. "
+               "Figure 8. Roll angle (a) and pitch angle with its hover-trim target (b) during the recorded flight."),
+        p("Figure 9 compares the rate each axis was asked for with the rate the gyro measured, on the same scale. "
           "On roll the two curves follow each other closely. On pitch the commanded rate reaches its 90 deg/s limit "
           "and stays there for almost two seconds while the model barely responds, and afterwards the measured rate "
           "oscillates around the command: the servos cannot produce the pitch moment fast enough."),
         figure("fig5_rate_tracking.png",
-               "Figure 8. Commanded and measured rate, roll (a) and pitch (b), for 5 s of the flight."),
-        p("Figure 9 shows the actuator outputs. The left motor runs about 90 us above the right one for most of "
+               "Figure 9. Commanded and measured rate, roll (a) and pitch (b), for 5 s of the flight."),
+        p("Figure 10 shows the actuator outputs. The left motor runs about 90 us above the right one for most of "
           "the flight, so either the centre of gravity was offset towards the left or the left motor and propeller give less thrust; weighing the two sides would tell which. Both servos stay away from "
           "their 1500 us centre, holding the rotors tilted forward: the centre of gravity was also behind the rotor "
           "axis, which matches the +9.3 deg hover tilt in Table 1."),
         figure("fig6_actuators.png",
-               "Figure 9. ESC pulses (a) and servo pulses (b) during the recorded flight. The right servo is mounted "
+               "Figure 10. ESC pulses (a) and servo pulses (b) during the recorded flight. The right servo is mounted "
                "mirrored, so it moves the opposite way for the same tilt."),
-        p("Figure 10 condenses the comparison into one number per axis. The pitch axis, driven by the servos, "
+        p("Figure 11 condenses the comparison into one number per axis. The pitch axis, driven by the servos, "
           "tracks its commanded rate five times worse than the roll axis, driven by the motors."),
         figure("fig7_tracking_error.png",
-               "Figure 10. RMS rate tracking error per axis during the airborne part of the recorded flight.",
+               "Figure 11. RMS rate tracking error per axis during the airborne part of the recorded flight.",
                width_mm=105),
         p("All figures are generated by tools/make_figures.py from the data in docs/data and from the simulations."),
         PageBreak(),
