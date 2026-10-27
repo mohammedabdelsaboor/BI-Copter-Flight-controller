@@ -295,6 +295,6 @@ P. Cook.
   author = {Mohammed Abdelsabour},
   title  = {Attitude Control of a Tilt-Rotor Bicopter on an ESP32-S3},
   year   = {2026},
-  howpublished = {\url{https://github.com/mohammedabdelsaboor/BI-Copter}}
+  howpublished = {\url{https://github.com/mohammedabdelsaboor/BI-Copter-Flight-controller}}
 }
 ```

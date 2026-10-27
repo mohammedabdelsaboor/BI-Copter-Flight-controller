@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: "Abdelsabour"
     given-names: "Mohammed"
-repository-code: "https://github.com/mohammedabdelsaboor/BI-Copter"
+repository-code: "https://github.com/mohammedabdelsaboor/BI-Copter-Flight-controller"
 date-released: 2026-10-27
 keywords:
   - bicopter
