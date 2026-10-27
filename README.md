@@ -17,9 +17,9 @@ The full write-up (how a bicopter flies, the firmware design, the setup procedur
 ## Test flight
 
 Hover test on a tether: the model lifts off the hand and the controller holds it level while the servos keep
-correcting pitch. Click the clip for the full 18-second video.
+correcting pitch. Click the clip for the full 16-second video.
 
-[![Tethered hover test: the bicopter lifts off the hand and holds itself level](docs/media/test_bi.gif)](docs/media/test_bi.mp4)
+[![Tethered hover test: the bicopter lifts off the hand and holds itself level](docs/media/bi_test_2.gif)](docs/media/bi_test_2.mp4)
 
 ## Hardware
 
