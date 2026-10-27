@@ -1,4 +1,7 @@
-# Setup and tuning
+# Appendix B: Setup and Tuning Procedure
+
+This appendix belongs to the project report in the [README](../README.md). It takes a new build from first
+power-up to a tuned hover, checking one thing at a time so that a fault is found where it occurs.
 
 Do everything up to "First hover" with the **propellers off**.
 
@@ -24,7 +27,7 @@ Gains, offsets and trims take effect as soon as you apply them, but are only kep
 WiFi shares the 2.4 GHz band with the FlySky link. Do the failsafe test below with WiFi on, and set `WEB_TUNING_ENABLED = false` once tuning is done if you see
 any radio glitches.
 
-## 1. Power-up
+## B.1 Power-up
 
 Leave the model still for the first couple of seconds after power-on. The gyro is calibrated then, and if the
 frame moves the board just tries again until it's still. The status line shows `DISARMED` when it's done.
@@ -33,7 +36,7 @@ For the first 2 seconds after that, keep your hands off the roll, pitch and yaw 
 the position they rest at as their centre. If a stick was trimmed off-centre, that would otherwise look like a
 constant command. Arming waits until this is finished.
 
-## 2. Radio
+## B.2 Radio
 
 Type `r`. Move each stick and watch the numbers:
 
@@ -60,7 +63,7 @@ receiver send a throttle value lower than the stick can normally reach:
 
 Don't fly until that test passes.
 
-## 3. Sensor direction
+## B.3 Sensor direction
 
 Type `i` and move the frame by hand:
 
@@ -94,7 +97,7 @@ with the throttle down. The status line should now show roll and pitch close to 
 Skipping this is the most common cause of drift. If the board thinks "level" is tilted by 8°, the model will
 fly tilted by 8° and slide that way.
 
-## 4. Servos
+## B.4 Servos
 
 1. With the servo horns off, power up. Both servos go to centre. Fit the horns so both motors point straight up.
 2. Fine-tune with `trim l 20` or `trim r -15` (microseconds), then `save`.
@@ -103,12 +106,12 @@ fly tilted by 8° and slide that way.
 4. **Twist test.** Turn the nose left by hand. The left motor should tilt forward and the right one back.
 5. **Stick test.** Pitch stick forward should tilt both motors forward. Yaw stick right tilts the left motor
    back and the right one forward. If the hand tests are right but a stick is backwards, the stick needs
-   reversing (step 2), not the servos.
+   reversing (section B.2), not the servos.
 
 `SERVO_TRAVEL_US` sets how far the servos move at full command. Lower `SERVO_MIN_US` and `SERVO_MAX_US` if the
 mechanism hits its stops.
 
-## 5. Motors and ESCs
+## B.5 Motors and ESCs
 
 1. Calibrate the ESCs once: `pio run -e esc_calibration -t upload`. Throttle up, plug in the battery, wait for
    the beeps, throttle down, wait for the confirmation beeps, unplug. Then flash the normal firmware again.
@@ -117,7 +120,7 @@ mechanism hits its stops.
    should be higher than the left.
 4. Arm. Both motors should idle smoothly. Raise `ESC_IDLE_US` if one stutters.
 
-## 6. First hover
+## B.6 First hover
 
 Pick an open space, and use a light tether if you can. Raise the throttle slowly until the model is light on
 its legs, then lift off to about half a metre. If it starts to oscillate, land and lower the P gain of that
@@ -134,7 +137,7 @@ Before blaming the gains for a forward/back swing, check the pitch mechanics. Th
 below the motor axis, the model should hang level when lifted by the motor shafts, and the motors should be
 upright at servo centre. Pitch is the weak axis of any bicopter, and these three things matter more than tuning.
 
-## 7. Tuning
+## B.7 Tuning
 
 The gains can be changed from the console without re-flashing. Changes only work while disarmed, take effect
 straight away, and survive a reboot once you type `save`.
@@ -187,7 +190,7 @@ commands sent to the mixer, the yaw I term (`yI`), all four outputs and the diff
 | slow turn | servo trims first, then yaw I up; check the props spin in opposite directions |
 | yaw twitching | yaw P down |
 
-## Troubleshooting
+## B.8 Troubleshooting
 
 These all came up while this firmware was being tested on the real model.
 
@@ -209,7 +212,7 @@ because of a transmitter trim. Centre learning and the wider yaw deadband now ta
 stand that stops the model turning, some build-up is normal.
 
 **The model keeps spinning faster.** The yaw correction is reversed, or there's a constant twisting force it
-can't overcome. Do the twist test from step 4. If the servos resist correctly, the cause is mechanical:
+can't overcome. Do the twist test from section B.4. If the servos resist correctly, the cause is mechanical:
 motors not upright, mismatched props, or one motor working much harder because the weight is off-centre.
 
 **The model shoots forward the moment it takes off.** On the ground the frame can't move, so an I term that
@@ -222,7 +225,7 @@ remove linkage play, then use the simple pitch gains above.
 
 **FAULT on the status line.** The sensor stopped answering. Check the four IMU wires, then reboot.
 
-## Console commands
+## B.9 Console commands
 
 ```
 s                status line on/off           g           recalibrate the gyro (keep still)

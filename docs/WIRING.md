@@ -1,6 +1,9 @@
-# Wiring
+# Appendix A: Hardware Wiring
 
-## Pins
+This appendix belongs to the project report in the [README](../README.md). It lists the pin assignment of the
+ESP32-S3 PowerFeather, the power distribution and the mounting of the inertial sensor.
+
+## A.1 Pin assignment
 
 | Signal | GPIO | Label on the PowerFeather | Goes to |
 |---|---|---|---|
@@ -19,7 +22,7 @@
 The firmware switches on GPIO 4 (the 3V3 header rail, which powers the MPU6050) and GPIO 14 (the STEMMA-QT rail)
 during start-up. You don't need to wire anything for that.
 
-## Power
+## A.2 Power distribution
 
 ```
  Battery ──┬── left ESC ── left motor
@@ -42,7 +45,7 @@ A few things that cause trouble if you get them wrong:
 - If the ESCs have built-in BECs, connect the red wire of one of them at most, or none if you use a UBEC.
 - The receiver outputs 3.3 V-friendly signals but needs 5 V on its power pins.
 
-## Mounting the MPU6050
+## A.3 Mounting the MPU6050
 
 Put it near the centre of the frame on a piece of soft foam or double-sided foam tape, chip facing up, with the
 wires loose enough that they don't pull on it. The default setting in `Config.hpp` expects the

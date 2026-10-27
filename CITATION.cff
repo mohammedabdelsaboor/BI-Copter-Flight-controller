@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this firmware or build on it, please cite it as below."
+title: "Attitude Control of a Tilt-Rotor Bicopter on an ESP32-S3"
+type: software
+authors:
+  - family-names: "Abdelsabour"
+    given-names: "Mohammed"
+repository-code: "https://github.com/mohammedabdelsaboor/BI-Copter"
+date-released: 2026-10-27
+keywords:
+  - bicopter
+  - tilt-rotor
+  - flight controller
+  - ESP32-S3
+  - attitude estimation
+  - Mahony filter
