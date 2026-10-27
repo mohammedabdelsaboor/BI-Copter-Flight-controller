@@ -356,13 +356,14 @@ right motor = throttle - roll          right servo = pitch + yaw
         ]),
         airframe_diagram(),
         p("Figure 1. The airframe. Roll is controlled by motor speed, pitch and yaw by servo tilt.", "caption"),
-        p("The tilt mechanism is built from two 3D-printed parts at each end of the arm, shown in Figure 2: a mount "
-          "that carries the motor and turns about the servo's output shaft, and a holder that fixes the MG996R "
-          "servo to the arm. Both are existing Thingiverse designs, credited in hardware/README.md."),
+        p("Figure 2 shows the real model. At each end of the arm an MG996R servo carries a 3D-printed mount, and the "
+          "motor sits on top of that mount, so the servo tilts the whole motor and propeller about the arm. The "
+          "flight controller, the IMU and the battery are on the centre of the arm. The printed parts are existing "
+          "Thingiverse designs, credited in hardware/README.md."),
         figure("fig8_mechanism_photos.jpg",
-               "Figure 2. The 3D-printed tilt mechanism parts in use: (a, b) motor mount with two different "
-               "brushless motors and propellers, (c) servo mount with a servo fitted, (d) servo mount installed. "
-               "Photos (a, b): protorobotics, CC BY-SA; (c, d): sternli27, CC BY; both from Thingiverse.",
+               "Figure 2. The bicopter built in this project: (a) the complete model on its test stand, (b) the left "
+               "and (c) the right tilt unit, each a motor on a printed mount turned by an MG996R servo, (d, e) the "
+               "model held by hand with both motors running, during a balancing test.",
                width_mm=150),
         p("Axes and signs", "h2"),
         p("The whole firmware uses one body frame: X points to the nose, Y to the left motor and Z up. Positive "

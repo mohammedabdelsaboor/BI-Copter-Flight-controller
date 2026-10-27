@@ -51,11 +51,11 @@ Pin assignment, power wiring and sensor mounting are documented in Appendix A,
 [docs/WIRING.md](docs/WIRING.md). The 3D-printed motor and servo mounts, existing Thingiverse designs credited to
 their authors, are in [hardware/](hardware/).
 
-![Figure 1. The 3D-printed tilt mechanism parts in use: motor mounts and servo mounts](docs/figures/fig8_mechanism_photos.jpg)
+![Figure 1. The bicopter built in this project and its tilt mechanism](docs/figures/fig8_mechanism_photos.jpg)
 
-*Figure 1. The 3D-printed tilt mechanism parts in use: (a, b) motor mount with two different brushless motors
-and propellers, (c) servo mount with a servo fitted, (d) servo mount installed. Photos (a, b): protorobotics,
-CC BY-SA; (c, d): sternli27, CC BY; both from Thingiverse.*
+*Figure 1. The bicopter built in this project: (a) the complete model on its test stand, (b) the left and (c) the
+right tilt unit, each a motor on a printed mount turned by an MG996R servo, (d, e) the model held by hand with
+both motors running during a balancing test.*
 
 ### 2.2 Coordinate frame
 

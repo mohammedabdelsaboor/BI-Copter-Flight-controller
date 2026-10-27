@@ -15,7 +15,7 @@ the image) so they can be used with captions in the PDF guide and the README.
   fig5  measured   commanded vs measured rate, roll and pitch              same flight
   fig6  measured   motor and servo outputs                                 same flight
   fig7  measured   RMS rate tracking error per axis                        same flight
-  fig8  photos     the 3D-printed tilt mechanism parts in use               hardware/3d-parts/*/images
+  fig8  photos     the real bicopter and its tilt mechanism                docs/media/*.jpg
 
 The script also prints the flight statistics that the PDF table uses.
 """
@@ -334,35 +334,44 @@ def figure7(s):
     return save(fig, "fig7_tracking_error.png")
 
 
+def crop_to_aspect(img, aspect):
+    """Centre-crops a PIL image to width / height = aspect, so it can be shown without stretching."""
+    w, h = img.size
+    if w / h > aspect:
+        new_w = int(round(h * aspect))
+        return img.crop(((w - new_w) // 2, 0, (w - new_w) // 2 + new_w, h))
+    new_h = int(round(w / aspect))
+    return img.crop((0, (h - new_h) // 2, w, (h - new_h) // 2 + new_h))
+
+
 def figure8():
-    """2 x 2 grid of the designers' photos of the printed parts, each cropped to the same 4:3 frame."""
+    """Photos of the real bicopter: the whole model, both tilt units close up, and the model running in hand."""
     from PIL import Image
 
-    photos = [
-        ("hardware/3d-parts/brushless-motor-mount/images/20191129_131905.jpg", "(a)"),
-        ("hardware/3d-parts/brushless-motor-mount/images/20191129_131836.jpg", "(b)"),
-        ("hardware/3d-parts/servo-mount/images/pic1.jpg", "(c)"),
-        ("hardware/3d-parts/servo-mount/images/pic3.jpg", "(d)"),
+    photo = Image.open(os.path.join(ROOT, "docs", "media", "bicopter.jpg")).convert("RGB")
+    running = Image.open(os.path.join(ROOT, "docs", "media", "handheld_test_running.jpg")).convert("RGB")
+    tilted = Image.open(os.path.join(ROOT, "docs", "media", "handheld_test_tilted.jpg")).convert("RGB")
+    whole, unit, hand = 1.95, 1.15, 2.6  # width / height of each row's panels
+    rows = [
+        [(crop_to_aspect(photo, whole), "(a)")],
+        [(crop_to_aspect(photo.crop((40, 100, 420, 430)), unit), "(b)"),    # left tilt unit
+         (crop_to_aspect(photo.crop((960, 110, 1280, 400)), unit), "(c)")],  # right tilt unit
+        [(crop_to_aspect(running, hand), "(d)"), (crop_to_aspect(tilted, hand), "(e)")],
     ]
-    fig, axes = plt.subplots(2, 2, figsize=(TEXT_WIDTH_IN, TEXT_WIDTH_IN * 0.75),
-                             gridspec_kw={"wspace": 0.03, "hspace": 0.03})
-    for ax, (path, label) in zip(axes.flat, photos):
-        img = Image.open(os.path.join(ROOT, path)).convert("RGB")
-        w, h = img.size
-        target = 4 / 3
-        if w / h > target:  # too wide: crop the sides
-            new_w = int(h * target)
-            img = img.crop(((w - new_w) // 2, 0, (w + new_w) // 2, h))
-        else:  # too tall: crop top and bottom
-            new_h = int(w / target)
-            img = img.crop((0, (h - new_h) // 2, w, (h + new_h) // 2))
-        img = img.resize((1200, 900), Image.LANCZOS)
-        ax.imshow(img)
-        ax.set_axis_off()
-        ax.text(0.02, 0.97, label, transform=ax.transAxes, va="top", ha="left", fontsize=9, color=INK,
-                bbox=dict(facecolor="white", edgecolor="none", pad=1.5, alpha=0.9))
-    path = os.path.join(FIG_DIR, "fig8_mechanism_photos.jpg")  # photographs: JPEG is a quarter of the size
-    fig.savefig(path, pil_kwargs={"quality": 88})
+    # Row heights follow from the aspects: a full-width row is 1/whole tall, a half-width row 0.5/aspect
+    ratios = [1 / whole, 0.5 / unit, 0.5 / hand]
+    fig = plt.figure(figsize=(TEXT_WIDTH_IN, TEXT_WIDTH_IN * sum(ratios) * 1.03))
+    grid_spec = fig.add_gridspec(3, 2, height_ratios=ratios, wspace=0.02, hspace=0.03,
+                                 left=0, right=1, top=1, bottom=0)
+    for r, row in enumerate(rows):
+        for c, (img, label) in enumerate(row):
+            ax = fig.add_subplot(grid_spec[r, :] if len(row) == 1 else grid_spec[r, c])
+            ax.imshow(img)  # aspect "equal": the photo is never stretched
+            ax.set_axis_off()
+            ax.text(0.012, 0.97, label, transform=ax.transAxes, va="top", ha="left", fontsize=9, color=INK,
+                    bbox=dict(facecolor="white", edgecolor="none", pad=1.5, alpha=0.9))
+    path = os.path.join(FIG_DIR, "fig8_mechanism_photos.jpg")  # photographs: JPEG keeps the file small
+    fig.savefig(path, pil_kwargs={"quality": 90})
     plt.close(fig)
     return path
 
