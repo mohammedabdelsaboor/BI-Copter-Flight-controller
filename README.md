@@ -2,7 +2,7 @@
 
 **Mohammed Abdelsabour** · 2026
 
-![The bicopter: two tilting motors on MG996R servos at the ends of the arm, with the ESP32-S3 and MPU6050 in the middle](docs/media/bicopter.jpg)
+![The bicopter on its test stand (left) and held by hand with both motors running (right)](docs/media/bicopter_header.jpg)
 
 ## Abstract
 
@@ -165,7 +165,7 @@ bi_copter_firmware/
     ├── SETUP_AND_TUNING.md     Appendix B: setup and tuning
     ├── figures/                result figures
     ├── data/                   recorded flight (.csv) and console log used for the figures
-    └── media/                  photograph and test flight video
+    └── media/                  photographs and test flight video
 ```
 
 Two tools supported the development. A USB console streams the controller's internal state ten times a second
