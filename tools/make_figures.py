@@ -6,7 +6,7 @@ Builds the result figures in docs/figures/ from the recorded data and the simula
     python3 tools/make_figures.py
 
 Figures are drawn in a plain academic style (serif text, panel labels, units on every axis, no titles inside
-the image) so they can be used with captions in the PDF guide and the README.
+the image) so they can be used with captions in the PDF report and the README.
 
   fig1  measured   roll vs pitch, console log of a throttle sweep           docs/data/throttle_sweep_*.txt
   fig2  simulated  attitude error, complementary vs Mahony (firmware code)  tools/sim/attitude_sim.cpp
@@ -48,7 +48,7 @@ REF = "#7d7c77"
 BLUE = "#2a78d6"
 ORANGE = "#eb6834"
 DASHED = (0, (5, 1.5))
-TEXT_WIDTH_IN = 6.5  # matches the 165 mm text width of the PDF guide
+TEXT_WIDTH_IN = 6.5  # close to the 160 mm text width of the PDF report
 
 plt.rcParams.update({
     "font.family": "serif",
