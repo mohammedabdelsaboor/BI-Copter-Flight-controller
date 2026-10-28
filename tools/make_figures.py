@@ -334,39 +334,48 @@ def figure7(s):
     return save(fig, "fig7_tracking_error.png")
 
 
-def crop_to_aspect(img, aspect):
-    """Centre-crops a PIL image to width / height = aspect, so it can be shown without stretching."""
-    w, h = img.size
-    if w / h > aspect:
-        new_w = int(round(h * aspect))
-        return img.crop(((w - new_w) // 2, 0, (w - new_w) // 2 + new_w, h))
-    new_h = int(round(w / aspect))
-    return img.crop((0, (h - new_h) // 2, w, (h - new_h) // 2 + new_h))
+def crop_around(img, box, aspect, margin=0.06):
+    """Crops so that `box` (the subject) is centred, with a small margin, at the panel's width/height ratio.
+    The frame grows around the subject's centre and is shifted back inside the photo where needed."""
+    x0, y0, x1, y1 = box
+    w, h = (x1 - x0) * (1 + 2 * margin), (y1 - y0) * (1 + 2 * margin)
+    if w / h < aspect:
+        w = h * aspect
+    else:
+        h = w / aspect
+    w, h = min(w, img.width), min(h, img.height)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    left = min(max(cx - w / 2, 0), img.width - w)
+    top = min(max(cy - h / 2, 0), img.height - h)
+    return img.crop((round(left), round(top), round(left + w), round(top + h)))
 
 
 def figure8():
-    """Photos of the real bicopter: the whole model, both tilt units close up, and the model running in hand."""
+    """Photos of the real bicopter, each panel cropped around the aircraft (or the tilt unit) and centred."""
     from PIL import Image
 
-    photo = Image.open(os.path.join(ROOT, "docs", "media", "bicopter.jpg")).convert("RGB")
-    running = Image.open(os.path.join(ROOT, "docs", "media", "handheld_test_running.jpg")).convert("RGB")
-    tilted = Image.open(os.path.join(ROOT, "docs", "media", "handheld_test_tilted.jpg")).convert("RGB")
-    whole, unit, hand = 1.95, 1.15, 2.6  # width / height of each row's panels
+    def load(path):
+        return Image.open(os.path.join(ROOT, path)).convert("RGB")
+
+    stand = load("docs/media/bicopter.jpg")
+    hand = load("docs/media/bicopter_in_hand.jpg")
+    flight = load("docs/media/bicopter_flight_test.jpg")
+    whole, unit, action = 2.6, 1.1, 1.45  # width / height of the panels in each row
     rows = [
-        [(crop_to_aspect(photo, whole), "(a)")],
-        [(crop_to_aspect(photo.crop((40, 100, 420, 430)), unit), "(b)"),    # left tilt unit
-         (crop_to_aspect(photo.crop((960, 110, 1280, 400)), unit), "(c)")],  # right tilt unit
-        [(crop_to_aspect(running, hand), "(d)"), (crop_to_aspect(tilted, hand), "(e)")],
+        [(crop_around(stand, (60, 120, 1275, 500), whole), "(a)")],          # whole aircraft on the stand
+        [(crop_around(stand, (70, 130, 430, 470), unit), "(b)"),             # left tilt unit
+         (crop_around(stand, (985, 140, 1275, 470), unit), "(c)")],          # right tilt unit
+        [(crop_around(hand, (390, 40, 1120, 450), action, margin=0.02), "(d)"),   # in hand, motors running
+         (crop_around(flight, (100, 75, 290, 245), action, margin=0.04), "(e)")],  # held up, seen from below
     ]
-    # Row heights follow from the aspects: a full-width row is 1/whole tall, a half-width row 0.5/aspect
-    ratios = [1 / whole, 0.5 / unit, 0.5 / hand]
+    ratios = [1 / whole, 0.5 / unit, 0.5 / action]  # row heights for a full-width or half-width panel
     fig = plt.figure(figsize=(TEXT_WIDTH_IN, TEXT_WIDTH_IN * sum(ratios) * 1.03))
     grid_spec = fig.add_gridspec(3, 2, height_ratios=ratios, wspace=0.02, hspace=0.03,
                                  left=0, right=1, top=1, bottom=0)
     for r, row in enumerate(rows):
         for c, (img, label) in enumerate(row):
             ax = fig.add_subplot(grid_spec[r, :] if len(row) == 1 else grid_spec[r, c])
-            ax.imshow(img)  # aspect "equal": the photo is never stretched
+            ax.imshow(img)  # aspect "equal": never stretched
             ax.set_axis_off()
             ax.text(0.012, 0.97, label, transform=ax.transAxes, va="top", ha="left", fontsize=9, color=INK,
                     bbox=dict(facecolor="white", edgecolor="none", pad=1.5, alpha=0.9))

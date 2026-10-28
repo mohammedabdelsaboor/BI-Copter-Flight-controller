@@ -54,8 +54,8 @@ their authors, are in [hardware/](hardware/).
 ![Figure 1. The bicopter built in this project and its tilt mechanism](docs/figures/fig8_mechanism_photos.jpg)
 
 *Figure 1. The bicopter built in this project: (a) the complete model on its test stand, (b) the left and (c) the
-right tilt unit, each a motor on a printed mount turned by an MG996R servo, (d, e) the model held by hand with
-both motors running during a balancing test.*
+right tilt unit, each a motor on a printed mount turned by an MG996R servo, (d) the model held by hand with both
+motors running, (e) the model held up during a flight test, seen from below.*
 
 ### 2.2 Coordinate frame
 

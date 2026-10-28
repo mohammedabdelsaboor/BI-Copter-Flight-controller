@@ -572,8 +572,9 @@ def ch_system():
                "servo tilts the rotor forward or back, which changes the direction of its thrust."),
         figure("photos", "fig8_mechanism_photos.jpg",
                "The bicopter built in this project. (a) Complete aircraft on its test stand. (b) Left and (c) right "
-               "tilt unit: brushless motor on a printed mount, turned by an MG996R servo. (d, e) Aircraft held by "
-               "hand with both motors running during a balancing test.", width_mm=140),
+               "tilt unit: brushless motor on a printed mount, turned by an MG996R servo. (d) Aircraft held by hand "
+               "with both motors running. (e) Aircraft held up during a flight test, seen from below.",
+               width_mm=140),
         section("3.2  Hardware components"),
         p(f"The components are listed in {tab('hardware')}. The servos are supplied by a separate regulator so that "
           "their current peaks do not disturb the flight controller."),
