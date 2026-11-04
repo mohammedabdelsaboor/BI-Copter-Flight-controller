@@ -7,9 +7,10 @@
 ## Abstract
 
 This repository contains the flight controller firmware for a small tilt-rotor bicopter: an aircraft with only
-two rotors, each mounted on a servo that tilts it forward and back. The controller runs on an ESP32-S3
-PowerFeather, reads a FlySky receiver and an MPU6050 inertial sensor, and closes a 500 Hz cascaded attitude
-loop that drives two ESCs and two MG996R servos. Attitude is estimated with a Mahony filter that also learns the
+two rotors, each mounted on a servo that tilts it forward and back. On this branch the controller runs on an
+ESP32-S3 SuperMini, and the FlySky receiver is read by a second board, an ESP32-S3 PowerFeather, which sends the
+stick values to the flight controller over a serial link. The flight controller reads an MPU6050 inertial sensor
+and closes a 500 Hz cascaded attitude loop that drives two ESCs and two MG996R servos. Attitude is estimated with a Mahony filter that also learns the
 gyro's zero error in flight. Roll is controlled by differential thrust and has proved easy to stabilise; pitch
 and yaw rely on the tilt servos, and most of the work in this project went into understanding why that axis is
 so much harder and how the firmware can help. The code is written as a set of small, independent C++
@@ -40,16 +41,38 @@ A complete write-up, with the derivations, figures and the full reference list, 
 
 | Component | Part | Role |
 |---|---|---|
-| Flight controller | ESP32-S3 PowerFeather | 240 MHz dual core, native USB, WiFi |
-| Inertial sensor | MPU6050 (GY-521) | 3-axis gyro and accelerometer over I²C |
+| Flight controller | ESP32-S3 SuperMini (S3FH4R2: 4 MB flash, 2 MB PSRAM) | 240 MHz dual core, native USB, WiFi |
+| Receiver bridge | ESP32-S3 PowerFeather | measures the receiver pulses, sends them over UART |
+| Inertial sensor | GY-521 module (MPU6500-type chip, `WHO_AM_I` 0x70) | 3-axis gyro and accelerometer over I²C |
 | Radio | FlySky FS-i6 + FS-iA6B | four PWM channels |
 | Tilt actuators | 2 × MG996R | tilt each rotor forward and back |
 | Propulsion | 2 × brushless motor and ESC | PWM at 400 Hz |
-| Servo supply | 5–6 V UBEC | keeps servo current off the controller |
+| Servo supply | 5–6 V UBEC | keeps servo current off the controllers |
 
-Pin assignment, power wiring and sensor mounting are documented in Appendix A,
-[docs/WIRING.md](docs/WIRING.md). The 3D-printed motor and servo mounts, existing Thingiverse designs credited to
-their authors, are in [hardware/](hardware/).
+```
+FS-iA6B ──4 x PWM──> PowerFeather ──UART, 100 frames/s──> SuperMini ──> 2 ESC, 2 servos
+                     (receiver bridge)                     (flight controller, MPU6050 on I²C)
+```
+
+| Signal | Board | GPIO |
+|---|---|---|
+| Servo left / right | SuperMini | 3 / 4 |
+| ESC left / right | SuperMini | 5 / 6 |
+| MPU6050 SDA / SCL | SuperMini | 8 / 9 |
+| Link input | SuperMini | 43 |
+| Status LED (RGB) | SuperMini | 48 |
+| Receiver CH1-CH4 (roll, pitch, throttle, yaw) | PowerFeather | 36, 37, 38, 39 |
+| Link output (pin marked TX) | PowerFeather | 44 |
+
+All boards, the receiver, the ESCs and the UBEC share one ground. The link carries a 13-byte frame with a
+sequence number and a CRC-8 every 10 ms; the flight controller cuts the motors when frames stop for 100 ms or the
+bridge reports the receiver lost. The wiring, the frame format and the bench checks are described in
+[bi_serial_comunication/README.md](bi_serial_comunication/README.md). The 3D-printed motor and servo mounts,
+existing Thingiverse designs credited to their authors, are in [hardware/](hardware/).
+
+The first version of this project used a single PowerFeather as flight controller with the receiver wired to it
+directly. That firmware is kept in the repository root; its wiring is in Appendix A,
+[docs/WIRING.md](docs/WIRING.md). The flight results in section 5 were recorded with it.
 
 ![Figure 1. The bicopter built in this project and its tilt mechanism](docs/figures/fig8_mechanism_photos.jpg)
 
@@ -172,10 +195,17 @@ bi_copter_firmware/
     └── media/                  photographs and test flight video
 ```
 
-The folder [bi_serial_comunication/](bi_serial_comunication/) holds a self-contained second version of the
-same firmware for a smaller board, the ESP32-S3 SuperMini. There the receiver is read by a separate ESP32-S3
-PowerFeather, which sends the four channels to the flight controller in a checked serial frame. Its README lists
-the wiring and the bench checks.
+The two-board hardware of this branch is built from [bi_serial_comunication/](bi_serial_comunication/). It uses
+the same libraries as the root firmware, with one change: the receiver input `RcPwmInput` is replaced by
+`SerialRcInput`, which decodes the frames from the bridge and offers the same interface, so the stick handling,
+failsafe and control code are unchanged. The tuning page also shows the four channels and the link counters.
+
+```
+bi_serial_comunication/
+├── esp32s3_supermini/          flight controller (PlatformIO): pins in include/Config.hpp
+├── powerfeather_rc_bridge/     receiver bridge: CH1-CH4 by MCPWM capture, frames out on TX
+└── common/RcLink/RcLink.hpp    the frame format, shared by both boards
+```
 
 Two tools supported the development. A USB console streams the controller's internal state ten times a second
 and accepts commands for calibration and gain changes, and a small web page served by the ESP32 over its own
@@ -291,12 +321,19 @@ small level errors, and indoor flight still needs the pilot's correction.
 
 ## 8. Reproducing this work
 
-The firmware builds with [PlatformIO](https://platformio.org):
+The firmware builds with [PlatformIO](https://platformio.org). For the two-board hardware of this branch:
 
 ```bash
-pio run -e powerfeather -t upload     # build and flash
-pio device monitor                    # console; type h for help
+cd bi_serial_comunication/powerfeather_rc_bridge
+pio run -t upload                     # receiver bridge
+pio device monitor                    # prints CH1-CH4 five times a second
+
+cd ../esp32s3_supermini
+pio run -t upload                     # flight controller
+pio device monitor                    # console; type h for help, s for status (link frames, bad frames)
 ```
+
+The original single-board firmware still builds from the repository root with `pio run -e powerfeather -t upload`.
 
 A four-channel radio has no switches, so arming uses the sticks: throttle down with yaw fully right arms, yaw
 fully left disarms, and holding the pitch stick fully forward or back for three seconds while disarmed stores
