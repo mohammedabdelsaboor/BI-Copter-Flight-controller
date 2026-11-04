@@ -107,6 +107,3 @@ ok, fast blink = receiver lost.
 - GPIO43 of the SuperMini is its boot-message pin: for about 0.1 s after reset the chip drives it while the
   bridge drives it too. This is brief and current-limited in practice, but moving the wire to GPIO44 (and setting
   `PIN_LINK_RX = 44`) avoids it.
-- Adding channels later (e.g. an arm switch on CH5) only needs `rclink::CHANNELS` raised in
-  [common/RcLink/RcLink.hpp](common/RcLink/RcLink.hpp), one more pin on the bridge, and the stick code on the
-  flight controller.
