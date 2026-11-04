@@ -815,22 +815,12 @@ def ch_discussion():
 
 def ch_conclusion():
     return [
-        *chapter("8  Conclusions and Future Work"),
+        *chapter("8  Conclusions"),
         p("A flight controller for a tilt-rotor bicopter was designed, implemented on an ESP32-S3 and evaluated "
           "with logged flight data. The roll axis, actuated by differential thrust, proved easy to stabilise. The "
           "pitch axis, actuated by servos, tracked its commanded rate five times worse, and the analysis showed "
           "this to be mainly a mechanical limitation. A Mahony estimator with bias learning, take-off detection "
           "and a simplified pitch controller removed the contributions of the firmware itself."),
-        p("The following steps are expected to improve the aircraft most:"),
-        *bullets([
-            "a centre of gravity placed low below the rotor axis and balanced front to back, so that the rotors are "
-            "vertical in hover;",
-            "faster digital servos (0.06-0.10 s per 60 deg) driven at 200 Hz or more, and a stiffer linkage "
-            "without play;",
-            "an optical-flow sensor and a laser rangefinder for position and height hold indoors;",
-            "battery voltage measurement to keep the throttle response constant during discharge;",
-            "feed-forward from the roll motor command to yaw, to cancel the rotor torque coupling.",
-        ]),
     ]
 
 

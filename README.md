@@ -20,7 +20,6 @@ libraries, and it was developed and tuned against logged data from the real mode
 | Document | What it covers |
 |---|---|
 | [Project report (PDF)](docs/BiCopter_Report.pdf) | the full write-up: design, derivations, results, references, appendices |
-| [Expected results for the four-link manipulator (PDF)](docs/Multi_Bicopter_Manipulator_Expected_Results.pdf) | simulated behaviour of four bicopters joined into one flying arm (section 7) |
 | [Wiring](docs/WIRING.md) | pins, power and sensor mounting (Appendix A of the report) |
 | [Setup and tuning](docs/SETUP_AND_TUNING.md) | bench checks before the first flight, failsafe, tuning steps (Appendix B) |
 | [3D-printed parts](hardware/README.md) | motor and servo mounts, with their authors and licences |
@@ -174,11 +173,9 @@ bi_copter_firmware/
 │   └── sim/attitude_sim.cpp    attitude filter simulation using the firmware code
 └── docs/
     ├── BiCopter_Report.pdf     project report (PDF)
-    ├── Multi_Bicopter_Manipulator_Expected_Results.pdf
-    │                           simulated results for the four-link flying arm
     ├── WIRING.md               Appendix A: wiring
     ├── SETUP_AND_TUNING.md     Appendix B: setup and tuning
-    ├── figures/                result figures, including the four-link simulation
+    ├── figures/                result figures
     ├── data/                   recorded flight (.csv) and console log used for the figures
     └── media/                  photographs and test flight video
 ```
@@ -288,44 +285,7 @@ stability than any gain.
 The controller holds attitude and heading but not position, so the model drifts slowly with air currents and
 small level errors, and indoor flight still needs the pilot's correction.
 
-## 7. Next step: a four-link flying arm
-
-The graduation project builds on this bicopter: four links joined by servo joints, each link carrying one
-bicopter at its centre with the rotors beside the link, in the spirit of the DRAGON and SPIDAR robots from the
-University of Tokyo [11], [12]. Before building it, the single-bicopter results above were used to predict what
-the four bicopters will do once they are joined. A model of one module was set up with the measured hover
-throttle, thrust curve, servo speed and balance offset, and four of them were simulated as one flying body whose
-centre of gravity and inertia change as the joints move.
-
-![Figure 7. The four-link robot in the line, square and L shapes](docs/figures/fig9_manipulator_shapes.png)
-
-*Figure 7. The simulated four-link robot in the line, square and L shapes. Each link carries one bicopter;
-the squares are the joints and + marks the centre of gravity.*
-
-The main finding is that four bicopters joined together cannot simply run four copies of this firmware. Each one
-would only use its own two rotors, while the whole chain is far heavier to turn, and the robot falls over in
-almost every shape (tilt swinging by 35-70° SD). With one controller that sees all eight rotors and shares the
-work between them, as DRAGON and SPIDAR do, the robot holds within 0.3-0.7° in every shape tested, steadier than
-the single bicopter ever was. It also shrugs off a 0.3 kg load picked up at the tip.
-
-![Figure 8. Simulated hover of the four-link robot with both kinds of controller](docs/figures/fig10_manipulator_results.png)
-
-*Figure 8. Simulated hover in five shapes: (a) tilt fluctuation and (b) peak joint torque, with four independent
-controllers and with one central controller.*
-
-The joints carry almost nothing while hovering (about 0.05 N m), but a fast shape change, 90° in one second,
-loads them to about 2.7 N m, well above what an MG996R can hold. The robot hovers at about 56 % thrust and should
-lift roughly 1.2 kg while keeping 30 % in reserve for control. All numbers, plots and assumptions are in the
-[expected-results PDF](docs/Multi_Bicopter_Manipulator_Expected_Results.pdf).
-
-## 8. Future work
-
-- Faster digital servos (0.06–0.10 s per 60°) driven at 200 Hz or more.
-- An optical-flow sensor and a laser rangefinder for position and height hold indoors.
-- Battery voltage measurement, to keep the throttle response constant as the battery discharges.
-- Feed-forward from the roll motor command into yaw, to cancel the rotor torque coupling.
-
-## 9. Reproducing this work
+## 7. Reproducing this work
 
 The firmware builds with [PlatformIO](https://platformio.org):
 
@@ -361,12 +321,6 @@ stick positions when the link drops, and the firmware cannot detect the loss.
 8. N. Rehm, *dRehmFlight VTOL flight controller*, https://github.com/nickrehm/dRehmFlight
 9. Espressif Systems, *ESP32-S3 Technical Reference Manual* (MCPWM and LED PWM controller).
 10. InvenSense, *MPU-6000 and MPU-6050 Product Specification* and *Register Map and Descriptions*.
-11. M. Zhao, T. Anzai, F. Shi, X. Chen, K. Okada and M. Inaba, "Design, modeling, and control of an aerial robot
-    DRAGON: A dual-rotor-embedded multilink robot with the ability of multi-degree-of-freedom aerial
-    transformation", *IEEE Robotics and Automation Letters*, vol. 3, no. 2, 2018.
-12. M. Zhao, T. Anzai and T. Nishio, "Design, modeling, and control of a quadruped robot SPIDAR: Spherically
-    vectorable and distributed rotors assisted air-ground quadruped robot", *IEEE Robotics and Automation
-    Letters*, vol. 8, no. 7, 2023.
 
 The PDF report lists the remaining documentation and software references.
 
