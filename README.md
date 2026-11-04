@@ -159,23 +159,14 @@ bi_copter_firmware/
 │   ├── make_figures.py         builds the result figures from data and simulation
 │   ├── make_report.py          generates the PDF report
 │   └── sim/attitude_sim.cpp    attitude filter simulation using the firmware code
-├── bi_serial_comunication/     two-board version: ESP32-S3 SuperMini flight controller, receiver read by a
-│                               PowerFeather and sent over UART (own README)
 └── docs/
     ├── BiCopter_Report.pdf     project report (PDF)
-    ├── Multi_Bicopter_Manipulator_Expected_Results.pdf
-    │                           simulated results for the four-link bicopter manipulator
     ├── WIRING.md               Appendix A: wiring
     ├── SETUP_AND_TUNING.md     Appendix B: setup and tuning
     ├── figures/                result figures
     ├── data/                   recorded flight (.csv) and console log used for the figures
     └── media/                  photographs and test flight video
 ```
-
-The folder [bi_serial_comunication/](bi_serial_comunication/) holds a self-contained second version of the
-same firmware for a smaller board, the ESP32-S3 SuperMini. There the receiver is read by a separate ESP32-S3
-PowerFeather, which sends the four channels to the flight controller in a checked serial frame. Its README lists
-the wiring and the bench checks.
 
 Two tools supported the development. A USB console streams the controller's internal state ten times a second
 and accepts commands for calibration and gain changes, and a small web page served by the ESP32 over its own
