@@ -2,7 +2,7 @@
 
 **Mohammed Abdelsabour** · 2026
 
-![The bicopter on its test stand (left) and held by hand with both motors running (right)](docs/media/bicopter_header.jpg)
+![The bicopter on its test stand (left), held by hand with both motors running (middle) and hovering in the netted flight area during the latest test (right)](docs/media/bicopter_header.jpg)
 
 ## Abstract
 
@@ -227,17 +227,18 @@ every design decision described above was made after reading such a recording.
 
 ### 5.1 Test videos
 
-Two tethered hover tests are shown below. In the first, the model lifts off the hand and the controller keeps it
-level while the servos keep correcting pitch. The second is the latest test, flown in a netted flight area: the
-model is held on a short tether and hovers above the hand. Click a clip for the full recording.
+Two hover tests are shown below. In the first, the model lifts off the hand and the controller keeps it level
+while the servos keep correcting pitch. The second is the latest test, flown in a netted flight area, with the
+model hovering above the hand; the thin cable is the USB lead that powers the ESP32-S3, not a tether. Click a
+clip for the full recording.
 
 <table>
   <tr>
     <td align="center" width="50%">
-      <a href="docs/media/bi_test_2.mp4"><img src="docs/media/bi_test_2.gif" alt="First tethered hover test: the bicopter lifts off the hand and holds itself level" width="100%"></a>
+      <a href="docs/media/bi_test_2.mp4"><img src="docs/media/bi_test_2.gif" alt="First hover test: the bicopter lifts off the hand and holds itself level" width="100%"></a>
     </td>
     <td align="center" width="50%">
-      <a href="docs/media/last_test.mp4"><img src="docs/media/last_test.gif" alt="Latest test: the bicopter hovers on a short tether in the netted flight area" width="100%"></a>
+      <a href="docs/media/last_test.mp4"><img src="docs/media/last_test.gif" alt="Latest test: the bicopter hovers above the hand in the netted flight area" width="100%"></a>
     </td>
   </tr>
   <tr>
@@ -245,12 +246,6 @@ model is held on a short tether and hovers above the hand. Click a clip for the 
     <td align="center"><em>Latest test in the netted flight area, 12 s</em></td>
   </tr>
 </table>
-
-<p align="center">
-  <img src="docs/media/last_test_photo.jpg" alt="The bicopter hovering on its tether during the latest test" width="640">
-</p>
-
-*The bicopter hovering on its tether during the latest test.*
 
 ### 5.2 Observations
 
