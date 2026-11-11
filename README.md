@@ -203,7 +203,7 @@ bi_copter_firmware/
     ├── SETUP_AND_TUNING.md     Appendix B: setup and tuning
     ├── figures/                result figures
     ├── data/                   recorded flight (.csv) and console log used for the figures
-    └── media/                  photographs and test flight video
+    └── media/                  photographs and test flight videos
 ```
 
 The two-board hardware of this branch is built from [bi_serial_comunication/](bi_serial_comunication/). It uses
@@ -225,10 +225,34 @@ every design decision described above was made after reading such a recording.
 
 ## 5. Experimental results
 
-The video below shows a tethered hover test: the model lifts off the hand and the controller keeps it level
-while the servos continuously correct pitch. Click the clip for the full 16-second recording.
+### 5.1 Test videos
 
-[![Tethered hover test: the bicopter lifts off the hand and holds itself level](docs/media/bi_test_2.gif)](docs/media/bi_test_2.mp4)
+Two tethered hover tests are shown below. In the first, the model lifts off the hand and the controller keeps it
+level while the servos keep correcting pitch. The second is the latest test, flown in a netted flight area: the
+model is held on a short tether and hovers above the hand. Click a clip for the full recording.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="docs/media/bi_test_2.mp4"><img src="docs/media/bi_test_2.gif" alt="First tethered hover test: the bicopter lifts off the hand and holds itself level" width="100%"></a>
+    </td>
+    <td align="center" width="50%">
+      <a href="docs/media/last_test.mp4"><img src="docs/media/last_test.gif" alt="Latest test: the bicopter hovers on a short tether in the netted flight area" width="100%"></a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><em>First hover test, 16 s</em></td>
+    <td align="center"><em>Latest test in the netted flight area, 12 s</em></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/media/last_test_photo.jpg" alt="The bicopter hovering on its tether during the latest test" width="640">
+</p>
+
+*The bicopter hovering on its tether during the latest test.*
+
+### 5.2 Observations
 
 The logged tests produced the following observations, in the order in which they were found.
 
